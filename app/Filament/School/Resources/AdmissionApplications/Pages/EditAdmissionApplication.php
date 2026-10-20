@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Filament\School\Resources\AdmissionApplications\Pages;
+
+use App\Enums\ApplicationStatus;
+use App\Filament\School\Resources\AdmissionApplications\Actions\ApplicationActions;
+use App\Filament\School\Resources\AdmissionApplications\AdmissionApplicationResource;
+use App\Models\AdmissionApplication;
+use Filament\Actions\DeleteAction;
+use Filament\Resources\Pages\EditRecord;
+
+class EditAdmissionApplication extends EditRecord
+{
+    protected static string $resource = AdmissionApplicationResource::class;
+
+    public function getSubheading(): ?string
+    {
+        /** @var AdmissionApplication $record */
+        $record = $this->getRecord();
+
+        return "{$record->reference} · {$record->status->getLabel()}";
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            ...ApplicationActions::all(),
+            DeleteAction::make()
+                ->visible(fn (AdmissionApplication $record): bool => $record->status !== ApplicationStatus::Enrolled),
+        ];
+    }
+}
