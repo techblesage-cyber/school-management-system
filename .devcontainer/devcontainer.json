@@ -1,0 +1,11 @@
+{
+  "name": "School Management System",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
+  },
+  "forwardPorts": [8000, 5173],
+  "postCreateCommand": "composer install && npm install"
+}
