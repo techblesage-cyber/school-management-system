@@ -4,6 +4,7 @@ namespace App\Filament\School\Resources\Subjects\Schemas;
 
 use App\Filament\School\Resources\Students\Schemas\StudentForm;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class SubjectForm
@@ -25,6 +26,11 @@ class SubjectForm
                     ->placeholder('e.g. 456')
                     ->helperText('Optional, e.g. the UNEB code.')
                     ->maxLength(20),
+                Toggle::make('in_aggregate')
+                    ->label('Counts towards aggregate and division')
+                    ->helperText('For PLE-style grading. Turn off for subjects like Religious Education or Kiswahili if your school leaves them out.')
+                    ->default(true)
+                    ->columnSpanFull(),
             ]);
     }
 }

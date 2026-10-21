@@ -6,6 +6,7 @@ use App\Models\Subject;
 use App\Models\TeachingAssignment;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,6 +25,10 @@ class SubjectsTable
                     ->weight('bold'),
                 TextColumn::make('code')
                     ->placeholder('—'),
+                IconColumn::make('in_aggregate')
+                    ->label('In aggregate')
+                    ->boolean()
+                    ->visibleFrom('md'),
                 TextColumn::make('teachers')
                     ->state(fn (Subject $record): array => $record->teachingAssignments
                         ->map(fn (TeachingAssignment $assignment): string => $assignment->user->name)

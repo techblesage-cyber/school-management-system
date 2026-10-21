@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'slug', 'email', 'phone', 'address', 'motto', 'logo', 'is_active'])]
+#[Fillable(['name', 'slug', 'email', 'phone', 'address', 'motto', 'logo', 'is_active', 'show_positions', 'report_shows_fees', 'sms_enabled', 'sms_payment_receipts'])]
 class School extends Model implements HasAvatar, HasName
 {
     /** @use HasFactory<SchoolFactory> */
@@ -23,6 +23,10 @@ class School extends Model implements HasAvatar, HasName
     {
         return [
             'is_active' => 'boolean',
+            'show_positions' => 'boolean',
+            'report_shows_fees' => 'boolean',
+            'sms_enabled' => 'boolean',
+            'sms_payment_receipts' => 'boolean',
         ];
     }
 
@@ -59,6 +63,46 @@ class School extends Model implements HasAvatar, HasName
     public function teachingAssignments(): HasMany
     {
         return $this->hasMany(TeachingAssignment::class);
+    }
+
+    public function academicTerms(): HasMany
+    {
+        return $this->hasMany(AcademicTerm::class);
+    }
+
+    public function feeItems(): HasMany
+    {
+        return $this->hasMany(FeeItem::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function gradingScales(): HasMany
+    {
+        return $this->hasMany(GradingScale::class);
+    }
+
+    public function assessments(): HasMany
+    {
+        return $this->hasMany(Assessment::class);
+    }
+
+    public function smsMessages(): HasMany
+    {
+        return $this->hasMany(SmsMessage::class);
+    }
+
+    public function circulars(): HasMany
+    {
+        return $this->hasMany(Circular::class);
     }
 
     public function admissionApplications(): HasMany

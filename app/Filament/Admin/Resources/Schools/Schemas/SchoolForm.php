@@ -63,6 +63,10 @@ class SchoolForm
                             ->label('Active')
                             ->helperText('Inactive schools can\'t open their portal.')
                             ->default(true),
+                        Toggle::make('sms_enabled')
+                            ->label('SMS to parents')
+                            ->helperText('Lets the school text parents: receipts, fee reminders, circulars and report cards. Each SMS is charged by the SMS provider.')
+                            ->default(false),
                     ]),
             ]);
     }

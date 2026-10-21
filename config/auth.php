@@ -42,6 +42,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Parents signing in to the parents' portal (by phone number)
+        'parent' => [
+            'driver' => 'session',
+            'provider' => 'parent_accounts',
+        ],
     ],
 
     /*
@@ -65,6 +71,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'parent_accounts' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\ParentAccount::class,
         ],
 
         // 'users' => [

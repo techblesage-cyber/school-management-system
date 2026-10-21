@@ -2,6 +2,7 @@
 
 namespace App\Filament\School\Resources\Guardians\Pages;
 
+use App\Filament\School\Resources\Guardians\Actions\PortalAccessActions;
 use App\Filament\School\Resources\Guardians\GuardianResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -16,6 +17,7 @@ class ViewGuardian extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ...PortalAccessActions::all(),
             EditAction::make(),
         ];
     }

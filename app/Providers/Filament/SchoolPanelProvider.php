@@ -39,6 +39,7 @@ class SchoolPanelProvider extends PanelProvider
             ->tenant(School::class, slugAttribute: 'slug')
             ->tenantProfile(EditSchoolProfile::class)
             ->searchableTenantMenu()
+            ->navigationGroups(['Students', 'Academics', 'Fees', 'Communication', 'Setup'])
             ->discoverResources(in: app_path('Filament/School/Resources'), for: 'App\Filament\School\Resources')
             ->discoverPages(in: app_path('Filament/School/Pages'), for: 'App\Filament\School\Pages')
             ->pages([

@@ -9,11 +9,23 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['school_id', 'name', 'code'])]
+#[Fillable(['school_id', 'name', 'code', 'in_aggregate'])]
 class Subject extends Model
 {
     /** @use HasFactory<SubjectFactory> */
     use BelongsToSchool, HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'in_aggregate' => 'boolean',
+        ];
+    }
+
+    public function marks(): HasMany
+    {
+        return $this->hasMany(Mark::class);
+    }
 
     public function teachingAssignments(): HasMany
     {

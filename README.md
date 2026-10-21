@@ -1,58 +1,46 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# School Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A multi-school management system by Sharebility. Each school has its own
+portal (optionally on its own subdomain); parents have a portal of their own.
 
-## About Laravel
+Built with Laravel 13, Filament 5 and MySQL. Runs on PHP 8.3+.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Portals
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Address | For |
+|---|---|
+| `/admin` | Sharebility: add and manage schools, switch SMS on per school, see SMS usage |
+| `/school/{school}` (or the school's subdomain) | School staff, each seeing what their role allows |
+| `/parent` | Parents, signing in with their phone number |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## What schools can do
 
-## Learning Laravel
+- **Students and admissions**: applications, admission, classes and streams, passport photos, parents and guardians
+- **Staff and roles**: school admin, head teacher, bursar, secretary and teachers, each with their own permissions
+- **Teaching**: each teacher's subjects and classes; teachers only see and mark their own classes
+- **Fees**: fee structure per term, invoices, payments with receipts, balances, statements, fee reminders
+- **Exams and report cards**: exams with weights, marks entry, grading scales (Primary D1–F9 with divisions, O-level A–E, A-level A–F with points), positions, comments, publishing, printable report cards
+- **Attendance**: daily register per class or stream, attendance on report cards
+- **Circulars**: to staff, to parents (all or chosen classes), with attachments, scheduled publishing, by SMS
+- **SMS** (through Africa's Talking): payment receipts, fee reminders, circulars, report cards ready, parents' portal logins
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## What parents see
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Their children (across schools), published report cards, latest marks and
+performance charts, attendance this term, fee balance and statement, and the
+school's circulars.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Guides
 
-## Agentic Development
+- [Adding an update zip in Codespaces](docs/UPDATE-IN-CODESPACES.md)
+- [Putting the system on the cPanel server](docs/DEPLOY-CPANEL.md)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Useful commands
 
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Command | What it does |
+|---|---|
+| `php artisan test` | Runs all the tests |
+| `php artisan db:seed --class=DemoSeeder` | Adds a demo school to try everything (not on the live server) |
+| `php artisan app:super-admin you@example.com` | Gives someone access to `/admin` (creates them if needed) |
+| `php artisan app:package` | Builds the zip to upload to the server |
+| `php artisan app:install` | On the server, after each upload: database, storage, caches |

@@ -14,6 +14,7 @@ class SchoolClassesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['gradingScale', 'classTeacher', 'streams']))
             ->columns([
                 TextColumn::make('name')
                     ->label('Class')
@@ -26,6 +27,14 @@ class SchoolClassesTable
                     ->badge()
                     ->color('gray')
                     ->placeholder('No streams'),
+                TextColumn::make('gradingScale.name')
+                    ->label('Grading')
+                    ->placeholder('Not set')
+                    ->visibleFrom('lg'),
+                TextColumn::make('classTeacher.name')
+                    ->label('Class teacher')
+                    ->placeholder('—')
+                    ->visibleFrom('md'),
                 TextColumn::make('active_students_count')
                     ->label('Students')
                     ->counts(['students as active_students_count' => fn (Builder $query) => $query->where('status', 'active')]),

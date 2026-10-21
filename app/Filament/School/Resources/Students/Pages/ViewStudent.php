@@ -16,6 +16,7 @@ class ViewStudent extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            StudentResource::feeStatementAction(),
             EditAction::make(),
         ];
     }

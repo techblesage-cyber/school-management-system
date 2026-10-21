@@ -17,4 +17,13 @@ enum SchoolAbility: string
     case DecideAdmissions = 'decide_admissions';
     case ManageStaff = 'manage_staff';
     case EditSchoolProfile = 'edit_school_profile';
+    case ViewFees = 'view_fees';
+    case ManageFees = 'manage_fees';
+    case RecordPayments = 'record_payments';
+    case EnterMarks = 'enter_marks';
+    case ManageExams = 'manage_exams';
+    case ViewResults = 'view_results';
+    case TakeAttendance = 'take_attendance';
+    case ManageCirculars = 'manage_circulars';
+    case ManageParentAccess = 'manage_parent_access';
 }

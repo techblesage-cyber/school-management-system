@@ -6,11 +6,17 @@ use App\Filament\School\Resources\Students\Pages\CreateStudent;
 use App\Filament\School\Resources\Students\Pages\EditStudent;
 use App\Filament\School\Resources\Students\Pages\ListStudents;
 use App\Filament\School\Resources\Students\Pages\ViewStudent;
+use App\Filament\School\Resources\Students\RelationManagers\AttendanceRelationManager;
 use App\Filament\School\Resources\Students\RelationManagers\GuardiansRelationManager;
+use App\Filament\School\Resources\Students\RelationManagers\InvoicesRelationManager;
+use App\Filament\School\Resources\Students\RelationManagers\PaymentsRelationManager;
 use App\Filament\School\Resources\Students\Schemas\StudentForm;
 use App\Filament\School\Resources\Students\Tables\StudentsTable;
+use App\Models\Invoice;
 use App\Models\Student;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -44,6 +50,9 @@ class StudentResource extends Resource
     {
         return [
             GuardiansRelationManager::class,
+            AttendanceRelationManager::class,
+            InvoicesRelationManager::class,
+            PaymentsRelationManager::class,
         ];
     }
 
@@ -69,6 +78,20 @@ class StudentResource extends Resource
     public static function getGlobalSearchEloquentQuery(): Builder
     {
         return parent::getGlobalSearchEloquentQuery()->with(['schoolClass', 'stream']);
+    }
+
+    /**
+     * Opens the printable fee statement (for staff who can see fees).
+     */
+    public static function feeStatementAction(): Action
+    {
+        return Action::make('feeStatement')
+            ->label('Fee statement')
+            ->icon(Heroicon::OutlinedPrinter)
+            ->color('gray')
+            ->visible(fn (): bool => Filament::auth()->user()?->can('viewAny', Invoice::class) ?? false)
+            ->url(fn (Student $record): string => route('fees.statement', $record, absolute: false))
+            ->openUrlInNewTab();
     }
 
     public static function getPages(): array

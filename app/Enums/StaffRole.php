@@ -42,15 +42,35 @@ enum StaffRole: string implements HasDescription, HasLabel
                 SchoolAbility::ManageAdmissions,
                 SchoolAbility::DecideAdmissions,
                 SchoolAbility::EditSchoolProfile,
+                SchoolAbility::ViewFees,
+                SchoolAbility::EnterMarks,
+                SchoolAbility::ManageExams,
+                SchoolAbility::ViewResults,
+                SchoolAbility::TakeAttendance,
+                SchoolAbility::ManageCirculars,
+                SchoolAbility::ManageParentAccess,
             ],
             self::Secretary => [
                 SchoolAbility::ViewStudents,
                 SchoolAbility::ManageStudents,
                 SchoolAbility::ViewAdmissions,
                 SchoolAbility::ManageAdmissions,
+                SchoolAbility::ManageCirculars,
+                SchoolAbility::ManageParentAccess,
             ],
-            self::Teacher, self::Bursar => [
+            self::Bursar => [
                 SchoolAbility::ViewStudents,
+                SchoolAbility::ViewFees,
+                SchoolAbility::ManageFees,
+                SchoolAbility::RecordPayments,
+            ],
+            // Teachers enter marks, see results and take attendance only for
+            // the classes they teach or are class teacher of
+            self::Teacher => [
+                SchoolAbility::ViewStudents,
+                SchoolAbility::EnterMarks,
+                SchoolAbility::ViewResults,
+                SchoolAbility::TakeAttendance,
             ],
         };
     }
@@ -67,9 +87,10 @@ enum StaffRole: string implements HasDescription, HasLabel
     {
         return match ($this) {
             self::Admin => 'Everything, including adding and removing staff.',
-            self::HeadTeacher => 'Students, classes, admissions decisions and the school profile.',
-            self::Secretary => 'Adds and updates students, parents and applications.',
-            self::Teacher, self::Bursar => 'Can view students and parents. More access comes with later modules.',
+            self::HeadTeacher => 'Students, classes, exams and report cards, admissions, circulars and the school profile. Can see fees.',
+            self::Secretary => 'Adds and updates students, parents and applications. Sends circulars and gives parents portal access.',
+            self::Bursar => 'Fees: fee structure, bills, payments and receipts. Can view students and parents.',
+            self::Teacher => 'Enters marks and takes attendance for their own subjects and classes. Writes class teacher comments.',
         };
     }
 }

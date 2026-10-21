@@ -361,7 +361,7 @@ class StudentsAdmissionsTest extends TestCase
         $this->get('/school/stmarys')->assertOk();
 
         Livewire::test(SchoolOverview::class)
-            ->assertSeeInOrder(['Students', '4', '1 boys · 3 girls'])
+            ->assertSeeInOrder(['Students', '4', '1 boy · 3 girls'])
             ->assertSeeInOrder(['Boarders', '1', '3 day scholars'])
             ->assertSeeInOrder(['Pending applications', '2']);
     }

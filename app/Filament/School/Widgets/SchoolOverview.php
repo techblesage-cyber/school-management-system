@@ -8,6 +8,7 @@ use App\Enums\Residence;
 use App\Enums\StudentStatus;
 use App\Filament\School\Resources\AdmissionApplications\AdmissionApplicationResource;
 use App\Filament\School\Resources\Students\StudentResource;
+use App\Models\AttendanceRecord;
 use App\Models\School;
 use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
@@ -33,13 +34,27 @@ class SchoolOverview extends StatsOverviewWidget
 
         $stats = [
             Stat::make('Students', number_format($total))
-                ->description(number_format($total - $girls).' boys · '.number_format($girls).' girls')
+                ->description(number_format($total - $girls).' '.str('boy')->plural($total - $girls).' · '.number_format($girls).' '.str('girl')->plural($girls))
                 ->icon(Heroicon::OutlinedAcademicCap)
                 ->url(StudentResource::getUrl()),
             Stat::make('Boarders', number_format($boarders))
-                ->description(number_format($total - $boarders).' day scholars')
+                ->description(number_format($total - $boarders).' '.str('day scholar')->plural($total - $boarders))
                 ->icon(Heroicon::OutlinedHome),
         ];
+
+        // Today's register, once any class has been marked
+        $today = AttendanceRecord::query()->withoutGlobalScopes()
+            ->where('school_id', $school->getKey())
+            ->whereDate('date', today())
+            ->get(['status']);
+
+        if ($today->isNotEmpty()) {
+            $atSchool = $today->filter(fn (AttendanceRecord $record): bool => $record->status->isAtSchool())->count();
+
+            $stats[] = Stat::make('At school today', number_format($atSchool))
+                ->description(number_format($today->count() - $atSchool).' absent · '.number_format(max(0, $total - $today->count())).' not marked')
+                ->icon(Heroicon::OutlinedCheckBadge);
+        }
 
         // Only for staff who handle admissions
         if (AdmissionApplicationResource::canAccess()) {

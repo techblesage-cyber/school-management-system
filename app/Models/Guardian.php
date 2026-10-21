@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
@@ -20,6 +21,14 @@ class Guardian extends Model
 {
     /** @use HasFactory<GuardianFactory> */
     use BelongsToSchool, HasFactory, HasPhoto;
+
+    /**
+     * Their parents' portal login, if they have one.
+     */
+    public function parentAccount(): BelongsTo
+    {
+        return $this->belongsTo(ParentAccount::class);
+    }
 
     public function students(): BelongsToMany
     {

@@ -7,6 +7,7 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Pages\Tenancy\EditTenantProfile;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -55,6 +56,16 @@ class EditSchoolProfile extends EditTenantProfile
                         TextInput::make('address')
                             ->maxLength(255)
                             ->columnSpanFull(),
+                        Toggle::make('show_positions')
+                            ->label('Show class positions on report cards')
+                            ->default(true),
+                        Toggle::make('report_shows_fees')
+                            ->label('Show fees balance on report cards')
+                            ->default(true),
+                        Toggle::make('sms_payment_receipts')
+                            ->label('Text parents a receipt for each payment')
+                            ->default(true)
+                            ->visible(fn (): bool => (bool) Filament::getTenant()?->sms_enabled),
                         FileUpload::make('logo')
                             ->image()
                             ->disk('public')

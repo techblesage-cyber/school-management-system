@@ -13,7 +13,9 @@ class EditStudent extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            StudentResource::feeStatementAction(),
+            DeleteAction::make()
+                ->modalDescription('Only for records added by mistake. For a student who has left, change their status instead.'),
         ];
     }
 }

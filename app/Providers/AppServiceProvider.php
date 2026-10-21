@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use App\Models\User;
-use Illuminate\Support\Facades\Gate;
+use App\Services\Sms\AfricasTalkingDriver;
+use App\Services\Sms\LogDriver;
+use App\Services\Sms\SmsDriver;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,7 +15,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // How text messages are sent: written to the log, or through Africa's Talking
+        $this->app->bind(SmsDriver::class, fn (): SmsDriver => match (config('sms.driver')) {
+            'africastalking' => AfricasTalkingDriver::fromConfig(),
+            default => new LogDriver,
+        });
     }
 
     /**
@@ -22,10 +27,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Sharebility super admins may do everything, in every school.
-        // Everyone else is checked against their role (see app/Policies).
-        Gate::before(fn (User $user): ?bool => $user->isSuperAdmin() ? true : null);
-
         // GitHub Codespaces shows the app over https, but passes requests to
         // Laravel over plain http. Without this, pages link their styles and
         // scripts with http:// and the browser blocks them (unstyled pages).
