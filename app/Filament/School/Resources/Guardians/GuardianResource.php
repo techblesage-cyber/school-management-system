@@ -5,6 +5,7 @@ namespace App\Filament\School\Resources\Guardians;
 use App\Filament\School\Resources\Guardians\Pages\CreateGuardian;
 use App\Filament\School\Resources\Guardians\Pages\EditGuardian;
 use App\Filament\School\Resources\Guardians\Pages\ListGuardians;
+use App\Filament\School\Resources\Guardians\Pages\ViewGuardian;
 use App\Filament\School\Resources\Guardians\RelationManagers\StudentsRelationManager;
 use App\Filament\School\Resources\Guardians\Schemas\GuardianForm;
 use App\Filament\School\Resources\Guardians\Tables\GuardiansTable;
@@ -63,6 +64,7 @@ class GuardianResource extends Resource
         return [
             'index' => ListGuardians::route('/'),
             'create' => CreateGuardian::route('/create'),
+            'view' => ViewGuardian::route('/{record}'),
             'edit' => EditGuardian::route('/{record}/edit'),
         ];
     }

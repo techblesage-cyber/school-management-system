@@ -51,6 +51,16 @@ class School extends Model implements HasAvatar, HasName
         return $this->hasMany(Guardian::class);
     }
 
+    public function subjects(): HasMany
+    {
+        return $this->hasMany(Subject::class);
+    }
+
+    public function teachingAssignments(): HasMany
+    {
+        return $this->hasMany(TeachingAssignment::class);
+    }
+
     public function admissionApplications(): HasMany
     {
         return $this->hasMany(AdmissionApplication::class);

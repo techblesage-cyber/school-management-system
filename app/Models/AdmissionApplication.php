@@ -82,7 +82,7 @@ class AdmissionApplication extends Model
      * Turns the application into a student record, linking the parent
      * (reusing an existing parent record with the same phone number).
      *
-     * @param  array{school_class_id: int, stream_id?: int|null, residence?: string|Residence, admission_date?: mixed}  $enrolment
+     * @param  array{school_class_id: int, stream_id?: int|null, residence?: string|Residence, admission_date?: mixed, photo?: string|null}  $enrolment
      */
     public function enrol(array $enrolment): Student
     {
@@ -104,6 +104,7 @@ class AdmissionApplication extends Model
                 'stream_id' => $enrolment['stream_id'] ?? null,
                 'residence' => $enrolment['residence'] ?? Residence::Day,
                 'admission_date' => $enrolment['admission_date'] ?? now(),
+                'photo' => $enrolment['photo'] ?? null,
             ]);
 
             $guardian = Guardian::findByPhone($this->school_id, $this->guardian_phone)

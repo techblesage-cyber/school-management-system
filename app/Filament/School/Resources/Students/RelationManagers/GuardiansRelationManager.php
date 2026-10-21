@@ -5,6 +5,8 @@ namespace App\Filament\School\Resources\Students\RelationManagers;
 use App\Enums\GuardianRelationship;
 use App\Filament\School\Resources\Guardians\Schemas\GuardianForm;
 use App\Models\Guardian;
+use App\Enums\SchoolAbility;
+use App\Models\User;
 use Filament\Actions\AttachAction;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DetachAction;
@@ -14,6 +16,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -27,6 +30,17 @@ class GuardiansRelationManager extends RelationManager
     protected static ?string $title = 'Parents & guardians';
 
     protected static ?string $modelLabel = 'parent / guardian';
+
+    /**
+     * Only staff who may manage students can add, link or unlink here.
+     */
+    public function isReadOnly(): bool
+    {
+        $user = auth()->user();
+
+        return parent::isReadOnly()
+            || ! ($user instanceof User && $user->canInSchool(SchoolAbility::ManageStudents, $this->getOwnerRecord()->school_id));
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -42,6 +56,9 @@ class GuardiansRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('name')
             ->columns([
+                ImageColumn::make('photo')
+                    ->disk('public')
+                    ->circular(),
                 TextColumn::make('name'),
                 TextColumn::make('relationship')
                     ->formatStateUsing(fn (?string $state): string => GuardianRelationship::tryFrom((string) $state)?->getLabel() ?? (string) $state),

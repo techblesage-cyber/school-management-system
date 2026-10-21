@@ -8,9 +8,11 @@ use App\Enums\StudentStatus;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,8 +71,12 @@ class StudentsTable
                 SelectFilter::make('status')
                     ->options(StudentStatus::class)
                     ->default(StudentStatus::Active->value),
+                Filter::make('without_photo')
+                    ->label('Without passport photo')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('photo')),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ])
             ->emptyStateHeading('No students yet')

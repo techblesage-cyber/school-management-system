@@ -52,4 +52,30 @@ enum ClassLevel: string implements HasLabel
             self::Other => [],
         };
     }
+
+    /**
+     * Common subjects for this level in Uganda, offered as a quick setup.
+     * Schools can rename or remove any of them afterwards.
+     *
+     * @return array<int, string>
+     */
+    public function standardSubjects(): array
+    {
+        return match ($this) {
+            self::Nursery => ['Language Development', 'Number Work', 'Reading', 'Writing', 'Health Habits', 'Social Development', 'Creative Arts'],
+            self::Primary => ['English', 'Mathematics', 'Science', 'Social Studies', 'Religious Education', 'Literacy', 'Local Language', 'Kiswahili', 'Creative Arts', 'Physical Education'],
+            self::OLevel => [
+                'English', 'Mathematics', 'Biology', 'Chemistry', 'Physics', 'Geography', 'History & Political Education',
+                'Kiswahili', 'Physical Education', 'Christian Religious Education', 'Islamic Religious Education',
+                'Entrepreneurship', 'Agriculture', 'ICT', 'Literature in English', 'Art & Design', 'Performing Arts',
+                'Nutrition & Food Technology', 'Technology & Design', 'Local Language', 'French',
+            ],
+            self::ALevel => [
+                'General Paper', 'Subsidiary Mathematics', 'Subsidiary ICT', 'Mathematics', 'Physics', 'Chemistry', 'Biology',
+                'Economics', 'Geography', 'History', 'Literature in English', 'Divinity', 'Islamic Religious Education',
+                'Entrepreneurship', 'Agriculture', 'Fine Art', 'Kiswahili', 'French',
+            ],
+            self::Other => [],
+        };
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Schools\RelationManagers;
 
 use App\Enums\StaffRole;
+use App\Filament\Components\PassportPhoto;
 use App\Models\User;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
@@ -14,6 +15,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -51,6 +53,7 @@ class UsersRelationManager extends RelationManager
                     ->dehydrated(fn (?string $state): bool => filled($state))
                     ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'Leave empty to keep the current password.' : null),
                 self::roleSelect(),
+                PassportPhoto::make('staff-photos'),
             ]);
     }
 
@@ -59,6 +62,9 @@ class UsersRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('name')
             ->columns([
+                ImageColumn::make('photo')
+                    ->disk('public')
+                    ->circular(),
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),

@@ -6,6 +6,7 @@ use App\Enums\Gender;
 use App\Enums\Residence;
 use App\Enums\StudentStatus;
 use App\Models\Concerns\BelongsToSchool;
+use App\Models\Concerns\HasPhoto;
 use App\Models\Concerns\HasYearlySequence;
 use Database\Factories\StudentFactory;
 use Filament\Models\Contracts\HasAvatar;
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'school_id', 'admission_number', 'lin', 'first_name', 'last_name', 'other_names', 'gender',
@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Storage;
 class Student extends Model implements HasAvatar
 {
     /** @use HasFactory<StudentFactory> */
-    use BelongsToSchool, HasFactory, HasYearlySequence;
+    use BelongsToSchool, HasFactory, HasPhoto, HasYearlySequence;
 
     protected $attributes = [
         'residence' => 'day',
@@ -106,6 +106,6 @@ class Student extends Model implements HasAvatar
 
     public function getFilamentAvatarUrl(): ?string
     {
-        return $this->photo ? Storage::disk('public')->url($this->photo) : null;
+        return $this->photoUrl();
     }
 }

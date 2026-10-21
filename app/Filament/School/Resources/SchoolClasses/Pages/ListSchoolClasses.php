@@ -5,6 +5,7 @@ namespace App\Filament\School\Resources\SchoolClasses\Pages;
 use App\Enums\ClassLevel;
 use App\Filament\School\Resources\SchoolClasses\SchoolClassResource;
 use App\Models\School;
+use App\Models\SchoolClass;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
@@ -34,6 +35,7 @@ class ListSchoolClasses extends ListRecords
         $levels = collect(ClassLevel::cases())->filter(fn (ClassLevel $level): bool => $level->standardClasses() !== []);
 
         return Action::make('addStandardClasses')
+            ->authorize('create', SchoolClass::class)
             ->label('Add standard classes')
             ->icon(Heroicon::OutlinedSparkles)
             ->color('gray')

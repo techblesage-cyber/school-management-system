@@ -5,12 +5,12 @@ namespace App\Filament\School\Resources\Students\Schemas;
 use App\Enums\Gender;
 use App\Enums\Residence;
 use App\Enums\StudentStatus;
+use App\Filament\Components\PassportPhoto;
 use App\Models\SchoolClass;
 use App\Models\Stream;
 use Closure;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -59,12 +59,7 @@ class StudentForm
                             ->label('Home address / village')
                             ->maxLength(255)
                             ->columnSpan(2),
-                        FileUpload::make('photo')
-                            ->image()
-                            ->avatar()
-                            ->disk('public')
-                            ->directory('student-photos')
-                            ->maxSize(2048),
+                        PassportPhoto::make('student-photos'),
                     ]),
                 Section::make('Enrolment')
                     ->columns(3)

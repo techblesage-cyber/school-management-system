@@ -7,6 +7,7 @@ use App\Filament\School\Resources\AdmissionApplications\Actions\ApplicationActio
 use App\Models\AdmissionApplication;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -48,8 +49,8 @@ class AdmissionApplicationsTable
             ->recordActions([
                 ActionGroup::make([
                     ...ApplicationActions::all(),
-                    EditAction::make()
-                        ->visible(fn (AdmissionApplication $record): bool => $record->status !== ApplicationStatus::Enrolled),
+                    ViewAction::make(),
+                    EditAction::make(),
                 ]),
             ])
             ->emptyStateHeading('No applications yet')

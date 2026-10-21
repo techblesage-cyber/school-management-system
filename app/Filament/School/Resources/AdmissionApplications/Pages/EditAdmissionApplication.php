@@ -2,7 +2,6 @@
 
 namespace App\Filament\School\Resources\AdmissionApplications\Pages;
 
-use App\Enums\ApplicationStatus;
 use App\Filament\School\Resources\AdmissionApplications\Actions\ApplicationActions;
 use App\Filament\School\Resources\AdmissionApplications\AdmissionApplicationResource;
 use App\Models\AdmissionApplication;
@@ -25,8 +24,7 @@ class EditAdmissionApplication extends EditRecord
     {
         return [
             ...ApplicationActions::all(),
-            DeleteAction::make()
-                ->visible(fn (AdmissionApplication $record): bool => $record->status !== ApplicationStatus::Enrolled),
+            DeleteAction::make(),
         ];
     }
 }

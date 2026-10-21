@@ -5,7 +5,10 @@ namespace App\Filament\School\Resources\Guardians\Tables;
 use App\Models\Guardian;
 use App\Models\Student;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -16,6 +19,10 @@ class GuardiansTable
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('students'))
             ->columns([
+                ImageColumn::make('photo')
+                    ->disk('public')
+                    ->circular()
+                    ->toggleable(),
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
@@ -33,7 +40,13 @@ class GuardiansTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('name')
+            ->filters([
+                Filter::make('without_photo')
+                    ->label('Without passport photo')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('photo')),
+            ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ]);
     }

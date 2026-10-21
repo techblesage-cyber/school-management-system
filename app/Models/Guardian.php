@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToSchool;
+use App\Models\Concerns\HasPhoto;
 use Database\Factories\GuardianFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -14,11 +15,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * A parent, guardian or sponsor. One guardian can have several children at
  * the same school, and each child can have several guardians.
  */
-#[Fillable(['school_id', 'name', 'phone', 'alt_phone', 'email', 'occupation', 'address'])]
+#[Fillable(['school_id', 'name', 'phone', 'alt_phone', 'email', 'occupation', 'address', 'photo'])]
 class Guardian extends Model
 {
     /** @use HasFactory<GuardianFactory> */
-    use BelongsToSchool, HasFactory;
+    use BelongsToSchool, HasFactory, HasPhoto;
 
     public function students(): BelongsToMany
     {

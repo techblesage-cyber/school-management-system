@@ -6,6 +6,7 @@ use App\Enums\ApplicationStatus;
 use App\Filament\School\Resources\AdmissionApplications\Pages\CreateAdmissionApplication;
 use App\Filament\School\Resources\AdmissionApplications\Pages\EditAdmissionApplication;
 use App\Filament\School\Resources\AdmissionApplications\Pages\ListAdmissionApplications;
+use App\Filament\School\Resources\AdmissionApplications\Pages\ViewAdmissionApplication;
 use App\Filament\School\Resources\AdmissionApplications\Schemas\AdmissionApplicationForm;
 use App\Filament\School\Resources\AdmissionApplications\Tables\AdmissionApplicationsTable;
 use App\Models\AdmissionApplication;
@@ -66,6 +67,7 @@ class AdmissionApplicationResource extends Resource
         return [
             'index' => ListAdmissionApplications::route('/'),
             'create' => CreateAdmissionApplication::route('/create'),
+            'view' => ViewAdmissionApplication::route('/{record}'),
             'edit' => EditAdmissionApplication::route('/{record}/edit'),
         ];
     }

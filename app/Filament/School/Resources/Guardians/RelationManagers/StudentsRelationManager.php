@@ -6,6 +6,8 @@ use App\Enums\GuardianRelationship;
 use App\Filament\School\Resources\Students\StudentResource;
 use App\Models\Student;
 use Filament\Actions\Action;
+use App\Enums\SchoolAbility;
+use App\Models\User;
 use Filament\Actions\AttachAction;
 use Filament\Actions\DetachAction;
 use Filament\Actions\EditAction;
@@ -28,6 +30,17 @@ class StudentsRelationManager extends RelationManager
     protected static ?string $title = 'Children';
 
     protected static ?string $modelLabel = 'child';
+
+    /**
+     * Only staff who may manage students can add, link or unlink here.
+     */
+    public function isReadOnly(): bool
+    {
+        $user = auth()->user();
+
+        return parent::isReadOnly()
+            || ! ($user instanceof User && $user->canInSchool(SchoolAbility::ManageStudents, $this->getOwnerRecord()->school_id));
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -69,7 +82,7 @@ class StudentsRelationManager extends RelationManager
                     ->label('Open')
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('gray')
-                    ->url(fn (Student $record): string => StudentResource::getUrl('edit', ['record' => $record])),
+                    ->url(fn (Student $record): string => StudentResource::getUrl('view', ['record' => $record])),
                 EditAction::make()
                     ->label('Edit link'),
                 DetachAction::make()

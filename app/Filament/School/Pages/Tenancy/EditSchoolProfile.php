@@ -2,7 +2,7 @@
 
 namespace App\Filament\School\Pages\Tenancy;
 
-use App\Enums\StaffRole;
+use App\Enums\SchoolAbility;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
@@ -30,15 +30,7 @@ class EditSchoolProfile extends EditTenantProfile
     {
         $user = Filament::auth()->user();
 
-        if (! $user instanceof User) {
-            return false;
-        }
-
-        return $user->isSuperAdmin()
-            || $user->schools()
-                ->whereKey($tenant->getKey())
-                ->wherePivotIn('role', [StaffRole::Admin->value, StaffRole::HeadTeacher->value])
-                ->exists();
+        return $user instanceof User && $user->canInSchool(SchoolAbility::EditSchoolProfile, $tenant->getKey());
     }
 
     public function form(Schema $schema): Schema

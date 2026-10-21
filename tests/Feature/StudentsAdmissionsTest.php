@@ -47,7 +47,7 @@ class StudentsAdmissionsTest extends TestCase
         $this->school = School::factory()->create(['name' => 'St Marys', 'slug' => 'stmarys']);
         $this->otherSchool = School::factory()->create(['slug' => 'kings']);
         $this->staff = User::factory()->create();
-        $this->school->users()->attach($this->staff, ['role' => StaffRole::Secretary->value]);
+        $this->school->users()->attach($this->staff, ['role' => StaffRole::HeadTeacher->value]);
 
         $this->actingAs($this->staff);
         Filament::setCurrentPanel('school');

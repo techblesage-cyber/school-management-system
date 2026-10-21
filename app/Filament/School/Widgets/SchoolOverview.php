@@ -30,9 +30,8 @@ class SchoolOverview extends StatsOverviewWidget
         $total = (clone $active)->count();
         $girls = (clone $active)->where('gender', Gender::Female)->count();
         $boarders = (clone $active)->where('residence', Residence::Boarding)->count();
-        $pending = $school->admissionApplications()->where('status', ApplicationStatus::Pending)->count();
 
-        return [
+        $stats = [
             Stat::make('Students', number_format($total))
                 ->description(number_format($total - $girls).' boys · '.number_format($girls).' girls')
                 ->icon(Heroicon::OutlinedAcademicCap)
@@ -40,11 +39,19 @@ class SchoolOverview extends StatsOverviewWidget
             Stat::make('Boarders', number_format($boarders))
                 ->description(number_format($total - $boarders).' day scholars')
                 ->icon(Heroicon::OutlinedHome),
-            Stat::make('Pending applications', number_format($pending))
+        ];
+
+        // Only for staff who handle admissions
+        if (AdmissionApplicationResource::canAccess()) {
+            $pending = $school->admissionApplications()->where('status', ApplicationStatus::Pending)->count();
+
+            $stats[] = Stat::make('Pending applications', number_format($pending))
                 ->description($pending > 0 ? 'Waiting for a decision' : 'All applications handled')
                 ->color($pending > 0 ? 'warning' : 'success')
                 ->icon(Heroicon::OutlinedClipboardDocumentList)
-                ->url(AdmissionApplicationResource::getUrl()),
-        ];
+                ->url(AdmissionApplicationResource::getUrl());
+        }
+
+        return $stats;
     }
 }

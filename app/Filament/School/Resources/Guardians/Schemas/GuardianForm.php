@@ -2,6 +2,8 @@
 
 namespace App\Filament\School\Resources\Guardians\Schemas;
 
+use App\Filament\Components\PassportPhoto;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -22,7 +24,7 @@ class GuardianForm
     /**
      * Shared with the "Parents & guardians" tab on a student.
      *
-     * @return array<int, TextInput>
+     * @return array<int, Field>
      */
     public static function fields(): array
     {
@@ -46,6 +48,7 @@ class GuardianForm
                 ->maxLength(100),
             TextInput::make('address')
                 ->maxLength(255),
+            PassportPhoto::make('parent-photos'),
         ];
     }
 }
