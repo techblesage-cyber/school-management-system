@@ -13,6 +13,7 @@ use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -47,6 +48,14 @@ class FeeItemResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    /**
+     * Only in the menu for those who set it up; others don't need it there.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canCreate();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
@@ -64,8 +73,8 @@ class FeeItemResource extends Resource
                     ->label('Who pays it')
                     ->options(Residence::class)
                     ->placeholder('Day scholars and boarders'),
-                Select::make('classes')
-                    ->label('Classes')
+                CheckboxList::make('classes')
+                    ->label('Classes that pay it')
                     ->relationship(
                         'classes',
                         'name',
@@ -74,10 +83,10 @@ class FeeItemResource extends Resource
                             ->orderBy('sort_order')
                             ->orderBy('name'),
                     )
-                    ->multiple()
-                    ->preload()
-                    ->placeholder('All classes')
-                    ->helperText('Leave empty if every class pays this item.')
+                    ->columns(['default' => 3, 'sm' => 4, 'lg' => 6])
+                    ->gridDirection('row')
+                    ->bulkToggleable()
+                    ->helperText('Tick the classes that pay this item, e.g. only S.1 for S.1 tuition. Tick none if every class pays it.')
                     ->columnSpanFull(),
             ]);
     }

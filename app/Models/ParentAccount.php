@@ -10,24 +10,36 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
 /**
- * A parent's login to the parents' portal. Signs in with their phone number.
- * Sees the children linked to them as parent or guardian, at any school.
+ * A parent's login to one school's parents' portal. Signs in with their
+ * phone number. Sees the children linked to them as parent or guardian at
+ * that school. A parent with children at two schools has two accounts, each
+ * with its own password, so one school's login never opens the other's.
  */
-#[Fillable(['name', 'phone', 'email', 'password', 'last_login_at'])]
+#[Fillable(['school_id', 'name', 'phone', 'email', 'password', 'must_change_password', 'last_login_at'])]
 #[Hidden(['password', 'remember_token'])]
 class ParentAccount extends Authenticatable implements FilamentUser
 {
+    use Notifiable;
+
     protected function casts(): array
     {
         return [
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
             'last_login_at' => 'datetime',
         ];
+    }
+
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
     }
 
     protected function phone(): Attribute
@@ -36,7 +48,7 @@ class ParentAccount extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Their parent/guardian records, one per school.
+     * Their parent/guardian records at this school.
      */
     public function guardians(): HasMany
     {
@@ -44,12 +56,13 @@ class ParentAccount extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Their children at active schools.
+     * Their children at this account's school, while the school is active.
      */
     public function childrenQuery(): Builder
     {
         return Student::query()
             ->withoutGlobalScopes()
+            ->where('students.school_id', $this->school_id)
             ->whereHas('guardians', fn (Builder $query) => $query->withoutGlobalScopes()->where('guardians.parent_account_id', $this->getKey()))
             ->whereHas('school', fn (Builder $query) => $query->where('is_active', true));
     }
@@ -73,6 +86,14 @@ class ParentAccount extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Where the parent's mail goes (logins, new passwords).
+     */
+    public function routeNotificationForMail(): ?string
+    {
+        return $this->email;
+    }
+
+    /**
      * An easy-to-read temporary password, e.g. "kx7m-p2q9".
      */
     public static function temporaryPassword(): string
@@ -84,9 +105,10 @@ class ParentAccount extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Gives a parent record portal access: links it to the account for its
-     * phone number (creating one if needed). Returns the account and, when a
-     * new password was set, that password to give to the parent.
+     * Gives a parent record portal access: links it to this school's account
+     * for its phone number (creating one if needed). Returns the account and,
+     * when a new password was set, that password to give to the parent. They
+     * choose their own password the first time they sign in.
      *
      * @return array{0: self, 1: string|null}
      */
@@ -95,20 +117,26 @@ class ParentAccount extends Authenticatable implements FilamentUser
         $phone = PhoneNumber::normalize($guardian->phone);
         abort_if(blank($phone), 422, 'This parent has no phone number.');
 
-        $account = static::query()->where('phone', $phone)->first();
+        $account = static::query()->where('school_id', $guardian->school_id)->where('phone', $phone)->first();
         $password = null;
 
         if (! $account) {
             $password = static::temporaryPassword();
             $account = static::query()->create([
+                'school_id' => $guardian->school_id,
                 'name' => $guardian->name,
                 'phone' => $phone,
                 'email' => $guardian->email,
                 'password' => $password,
+                'must_change_password' => true,
             ]);
         } elseif ($resetPassword) {
             $password = static::temporaryPassword();
-            $account->update(['password' => $password]);
+            $account->update(['password' => $password, 'must_change_password' => true]);
+        }
+
+        if (blank($account->email) && filled($guardian->email)) {
+            $account->update(['email' => $guardian->email]);
         }
 
         $guardian->forceFill(['parent_account_id' => $account->getKey()])->save();

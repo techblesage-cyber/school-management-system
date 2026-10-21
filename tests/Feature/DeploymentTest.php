@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\ParentAccount;
+use App\Providers\Filament\AdminPanelProvider;
+use Filament\Panel;
 use App\Models\ResultPublication;
 use App\Models\School;
 use App\Models\Student;
@@ -79,14 +81,45 @@ class DeploymentTest extends TestCase
 
         $this->get('http://sms.sharebility.test/')
             ->assertOk()
-            ->assertSee("Parents' portal", false)
-            ->assertSee('Sharebility admin')
+            ->assertSee('A parent')
             ->assertDontSee('St Marys College');
 
         $this->get('http://stmarys.sms.sharebility.test/')
             ->assertOk()
             ->assertSee('St Marys College')
-            ->assertSee('Faith and work')
-            ->assertDontSee('Sharebility admin');
+            ->assertSee('Faith and work');
+
+        // The Sharebility admin panel is never linked from the home page
+        foreach (['http://sms.sharebility.test/', 'http://stmarys.sms.sharebility.test/'] as $page) {
+            $this->get($page)->assertDontSee('/admin')->assertDontSee('Sharebility');
+        }
+    }
+
+    public function test_the_admin_panel_can_have_a_private_address_on_the_main_domain_only(): void
+    {
+        $read = function (?string $value): string {
+            $value === null ? putenv('ADMIN_PATH') : putenv("ADMIN_PATH={$value}");
+            $_ENV['ADMIN_PATH'] = $_SERVER['ADMIN_PATH'] = $value;
+
+            if ($value === null) {
+                unset($_ENV['ADMIN_PATH'], $_SERVER['ADMIN_PATH']);
+            }
+
+            return (require config_path('school.php'))['admin_path'];
+        };
+
+        $this->assertSame('admin', $read(null));
+        $this->assertSame('sharebility-hq-7k2', $read('Sharebility-HQ-7k2'));
+        $this->assertSame('hq', $read('/hq/'), 'slashes and odd characters are dropped');
+        $this->assertSame('admin', $read('///'));
+        $read(null);
+
+        // With school subdomains on, the panel answers on the main domain only
+        config(['school.tenant_domain' => 'sms.sharebility.test']);
+        $panel = (new AdminPanelProvider($this->app))->panel(Panel::make());
+        $this->assertSame(['sms.sharebility.test'], $panel->getDomains());
+
+        config(['school.tenant_domain' => null]);
+        $this->assertSame([], (new AdminPanelProvider($this->app))->panel(Panel::make())->getDomains());
     }
 }

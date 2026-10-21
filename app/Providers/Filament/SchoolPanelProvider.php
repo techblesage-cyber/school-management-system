@@ -8,16 +8,20 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
+use App\Filament\Shared\ChoosePassword;
+use App\Filament\Shared\Home;
+use App\Filament\Shared\InitialsAvatars;
+use App\Filament\Shared\Theme;
+use App\Http\Middleware\RequireOwnPassword;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /**
@@ -28,10 +32,12 @@ class SchoolPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        $panel = $panel
+        $panel = Theme::apply($panel)
             ->id('school')
             ->path('school')
             ->login()
+            // "Forgot password?" emails a reset link
+            ->passwordReset()
             ->brandName('School Portal')
             ->colors([
                 'primary' => Color::Blue,
@@ -39,16 +45,15 @@ class SchoolPanelProvider extends PanelProvider
             ->tenant(School::class, slugAttribute: 'slug')
             ->tenantProfile(EditSchoolProfile::class)
             ->searchableTenantMenu()
+            ->spa()
+            ->defaultAvatarProvider(InitialsAvatars::class)
             ->navigationGroups(['Students', 'Academics', 'Fees', 'Communication', 'Setup'])
             ->discoverResources(in: app_path('Filament/School/Resources'), for: 'App\Filament\School\Resources')
             ->discoverPages(in: app_path('Filament/School/Pages'), for: 'App\Filament\School\Pages')
             ->pages([
-                Dashboard::class,
+                Home::class,
             ])
             ->discoverWidgets(in: app_path('Filament/School/Widgets'), for: 'App\Filament\School\Widgets')
-            ->widgets([
-                AccountWidget::class,
-            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -62,7 +67,10 @@ class SchoolPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+                RequireOwnPassword::class,
+            ])
+            // First sign-in with a password from the system: choose your own
+            ->authenticatedRoutes(fn () => Route::get('/choose-password', ChoosePassword::class)->name('auth.choose-password'));
 
         // Live server: one subdomain per school (see config/school.php)
         if (filled($domain = config('school.tenant_domain'))) {

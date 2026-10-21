@@ -9,6 +9,7 @@ use App\Filament\Parent\Pages\ParentLogin;
 use App\Filament\Parent\Resources\Children\Pages\ListChildren;
 use App\Filament\Parent\Resources\Circulars\Pages\ListCirculars;
 use App\Filament\Parent\Widgets\ChildrenOverview;
+use App\Filament\Shared\ChoosePassword;
 use App\Filament\Parent\Widgets\PerformanceChart;
 use App\Filament\School\Resources\Guardians\Pages\ListGuardians;
 use App\Models\AcademicTerm;
@@ -30,6 +31,7 @@ use App\Support\ParentPortal;
 use App\Support\PhoneNumber;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -73,7 +75,7 @@ class ParentPortalTest extends TestCase
         $this->mother = Guardian::factory()->create(['school_id' => $this->school->getKey(), 'name' => 'Grace Nakato', 'phone' => '0772 123 456']);
         $this->child->guardians()->attach($this->mother, ['relationship' => 'mother', 'is_primary' => true]);
         [$this->account] = ParentAccount::grantTo($this->mother);
-        $this->account->update(['password' => 'secret-pass']);
+        $this->account->update(['password' => 'secret-pass', 'must_change_password' => false]);
 
         Filament::setCurrentPanel(null);
         ParentPortal::flush();
@@ -212,24 +214,54 @@ class ParentPortalTest extends TestCase
         $this->assertSame([], $chart($this->stranger)['datasets'][0]['data']);
     }
 
-    public function test_one_account_covers_children_at_several_schools(): void
+    public function test_each_school_gives_a_parent_a_separate_login(): void
     {
-        $other = School::factory()->create(['name' => 'Kings Primary']);
+        $other = School::factory()->create(['slug' => 'kings', 'name' => 'Kings Primary']);
         $sibling = Student::factory()->create(['school_id' => $other->getKey(), 'first_name' => 'Baby', 'last_name' => 'Nakato']);
         $sameMother = Guardian::factory()->create(['school_id' => $other->getKey(), 'name' => 'Grace N.', 'phone' => '+256772123456']);
         $sibling->guardians()->attach($sameMother, ['relationship' => 'mother', 'is_primary' => true]);
 
-        [$account, $password] = ParentAccount::grantTo($sameMother);
-        $this->assertTrue($account->is($this->account));
-        $this->assertNull($password, 'an existing account keeps its password');
-        $this->assertTrue(Hash::check('secret-pass', $account->refresh()->password));
+        // The other school makes its own account, with its own first password
+        [$kingsAccount, $password] = ParentAccount::grantTo($sameMother);
+        $this->assertFalse($kingsAccount->is($this->account));
+        $this->assertSame($other->getKey(), $kingsAccount->school_id);
+        $this->assertNotNull($password);
+        $this->assertTrue($kingsAccount->must_change_password);
+        $this->assertTrue(Hash::check('secret-pass', $this->account->refresh()->password), 'the first school\'s password is untouched');
 
+        // Same phone number: the password decides which school's portal opens
+        $this->assertTrue(Auth::guard('parent')->attempt(['phone' => '+256772123456', 'password' => $password]));
+        $this->assertTrue(Auth::guard('parent')->user()->is($kingsAccount));
+        Auth::guard('parent')->logout();
+        $this->assertTrue(Auth::guard('parent')->attempt(['phone' => '+256772123456', 'password' => 'secret-pass']));
+        $this->assertTrue(Auth::guard('parent')->user()->is($this->account));
+        Auth::guard('parent')->logout();
+
+        // Each sees only that school's children
         $this->signInParent();
-        Livewire::test(ChildrenOverview::class)->assertCanSeeTableRecords([$this->child, $sibling]);
+        Livewire::test(ChildrenOverview::class)->assertSeeHtml('data-child="'.$this->child->getKey().'"')->assertDontSeeHtml('data-child="'.$sibling->getKey().'"');
+        $this->get("/parent/children/{$sibling->getKey()}")->assertNotFound();
+        $kingsAccount->update(['must_change_password' => false]);
+        $this->signInParent($kingsAccount);
+        Livewire::test(ChildrenOverview::class)->assertSeeHtml('data-child="'.$sibling->getKey().'"')->assertDontSeeHtml('data-child="'.$this->child->getKey().'"');
 
-        // A school switched off is hidden
+        // Even a parent record wrongly linked across schools shows nothing from the other school
+        $sameMother->forceFill(['parent_account_id' => $this->account->getKey()])->save();
+        $this->assertFalse($this->account->hasChild($sibling));
+        $sameMother->forceFill(['parent_account_id' => $kingsAccount->getKey()])->save();
+
+        // They can't make both passwords the same, or signing in couldn't tell them apart
+        $this->assertTrue(ChoosePassword::usedAtAnotherSchool($kingsAccount, 'secret-pass'));
+        $this->assertFalse(ChoosePassword::usedAtAnotherSchool($kingsAccount, 'something-else'));
+
+        // On a school's own subdomain only that school's accounts open
+        config(['school.tenant_domain' => 'sms.sharebility.test']);
+        $this->app->instance('request', Request::create('http://kings.sms.sharebility.test/parent/login'));
+        $this->assertFalse(Auth::guard('parent')->attempt(['phone' => '+256772123456', 'password' => 'secret-pass']));
+
+        // A school switched off is closed to its parents
         $other->update(['is_active' => false]);
-        Livewire::test(ChildrenOverview::class)->assertCanSeeTableRecords([$this->child])->assertCanNotSeeTableRecords([$sibling]);
+        $this->assertFalse($kingsAccount->refresh()->canAccessPanel(Filament::getPanel('parent')));
     }
 
     public function test_parents_see_circulars_meant_for_their_children(): void
@@ -299,8 +331,9 @@ class ParentPortalTest extends TestCase
         $this->assertSame('Robert Okello', $account->name);
 
         $oldHash = $account->password;
-        Livewire::test(ListGuardians::class)->callTableAction('resetPortalPassword', $father);
+        Livewire::test(ListGuardians::class)->callTableAction('resetPortalPassword', $father)->assertNotified();
         $this->assertNotSame($oldHash, $account->refresh()->password);
+        $this->assertTrue($account->must_change_password);
 
         Livewire::test(ListGuardians::class)->callTableAction('removePortalAccess', $father);
         $this->assertNull($father->refresh()->parent_account_id);
@@ -322,6 +355,6 @@ class ParentPortalTest extends TestCase
 
         $this->signInParent();
         $this->get("/parent/children/{$this->child->getKey()}")->assertOk()->assertSee('UGX 800,000');
-        Livewire::test(ChildrenOverview::class)->assertSee('UGX 800,000');
+        Livewire::test(ChildrenOverview::class)->assertSee('Fees: UGX 800,000');
     }
 }

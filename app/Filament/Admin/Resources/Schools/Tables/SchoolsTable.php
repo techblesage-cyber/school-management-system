@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Schools\Tables;
 
+use App\Filament\Shared\InitialsAvatars;
 use App\Models\School;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -20,6 +21,7 @@ class SchoolsTable
         return $table
             ->columns([
                 ImageColumn::make('logo')
+                    ->defaultImageUrl(fn ($record): string => InitialsAvatars::for((string) $record->name))
                     ->disk('public')
                     ->circular(),
                 TextColumn::make('name')

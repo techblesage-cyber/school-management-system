@@ -2,24 +2,18 @@
 
 use App\Http\Controllers\CircularAttachmentController;
 use App\Http\Controllers\FeeDocumentController;
+use App\Http\Controllers\LoginSlipController;
 use App\Http\Controllers\ParentDocumentController;
 use App\Http\Controllers\ReportCardController;
-use App\Models\School;
+use App\Support\SchoolAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Home page: links to the parents' portal and the staff portal. On a
 // school's own subdomain it shows that school's name and logo.
-Route::get('/', function (Request $request) {
-    $domain = config('school.tenant_domain');
-    $slug = filled($domain) && str_ends_with($request->getHost(), '.'.$domain)
-        ? substr($request->getHost(), 0, -strlen('.'.$domain))
-        : null;
-
-    return view('home', [
-        'school' => $slug ? School::query()->active()->where('slug', $slug)->first() : null,
-    ]);
-})->name('home');
+Route::get('/', fn (Request $request) => view('home', [
+    'school' => SchoolAddress::fromRequest($request),
+]))->name('home');
 
 // Printable fees documents (opened from the school portal in a new tab)
 Route::get('/fees/receipts/{payment}', [FeeDocumentController::class, 'receipt'])->name('fees.receipt');
@@ -40,3 +34,6 @@ Route::get('/parents/report-cards/{term}/{student}', [ParentDocumentController::
 Route::get('/parents/statements/{student}', [ParentDocumentController::class, 'statement'])
     ->whereNumber('student')
     ->name('parents.statement');
+
+// A printed first login for a parent without email or SMS (just made by the person printing it)
+Route::get('/parents/login-slips/{guardian}', LoginSlipController::class)->whereNumber('guardian')->name('parents.login-slip');

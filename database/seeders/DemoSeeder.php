@@ -147,7 +147,7 @@ class DemoSeeder extends Seeder
         }
 
         [$account] = ParentAccount::grantTo($demoParent);
-        $account->update(['password' => 'parent123']);
+        $account->update(['password' => 'parent123', 'must_change_password' => false]);
 
         // Exams and marks for last term and this term
         foreach ([$term2, $term3] as $term) {

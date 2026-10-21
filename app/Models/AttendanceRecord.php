@@ -92,7 +92,7 @@ class AttendanceRecord extends Model
 
         return [
             'present' => $days(AttendanceStatus::Present) + $days(AttendanceStatus::Late),
-            'absent' => $days(AttendanceStatus::Absent) + $days(AttendanceStatus::Excused),
+            'absent' => $days(AttendanceStatus::Absent) + $days(AttendanceStatus::Sick) + $days(AttendanceStatus::Excused),
             'late' => $days(AttendanceStatus::Late),
         ];
     }

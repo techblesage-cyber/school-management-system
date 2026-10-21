@@ -26,7 +26,7 @@ class ParentLogin extends Login
 
     public function getSubheading(): string|Htmlable|null
     {
-        return 'Sign in with your phone number and the password from your child\'s school.';
+        return 'Sign in with your phone number and the password from your child\'s school. Each school gives you its own password.';
     }
 
     protected function getEmailFormComponent(): Component

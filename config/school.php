@@ -21,6 +21,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Sharebility admin panel address
+    |--------------------------------------------------------------------------
+    |
+    | The admin panel is never linked from school or parent screens. On the
+    | live server give it a private address only Sharebility knows, e.g.
+    | ADMIN_PATH=sharebility-hq-7k2. With school subdomains on, it only opens
+    | on the main domain, never on a school's own address.
+    |
+    */
+
+    'admin_path' => trim((string) preg_replace('/[^a-z0-9\-]/', '', strtolower((string) env('ADMIN_PATH', 'admin'))), '-') ?: 'admin',
+
+    /*
+    |--------------------------------------------------------------------------
     | Currency
     |--------------------------------------------------------------------------
     |

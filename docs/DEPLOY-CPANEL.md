@@ -14,10 +14,10 @@ username. Replace both with your own.
 | Address | Who uses it |
 |---|---|
 | `https://sms.sharebility.net` | Home page with the buttons below |
-| `https://sms.sharebility.net/admin` | Sharebility: add schools, switch SMS on, see SMS usage |
+| `https://sms.sharebility.net/your-private-name` | Sharebility only: add schools, switch SMS on, see SMS usage (step 6: `ADMIN_PATH`) |
 | `https://sms.sharebility.net/school/login` | School staff (head teacher, bursar, teachers, ...) |
 | `https://sms.sharebility.net/parent` | Parents (sign in with phone number) |
-| `https://stmarys.sms.sharebility.net` | A school's own address (optional, step 10) |
+| `https://stmarys.sms.sharebility.net` | A school's own address (optional, step 11) |
 
 ---
 
@@ -34,13 +34,24 @@ username. Replace both with your own.
 > If you can't find PHP 8.3, ask the hosting support to enable it. The system
 > needs PHP 8.3 or newer.
 
-## 2. Create the database
+## 2. Create the database and a mailbox
+
+### Database
 
 cPanel → **MySQL Database Wizard**:
 
 1. Database name: `sms` (cPanel makes it `cpuser_sms`).
 2. User: `sms` (cPanel makes it `cpuser_sms`) with a strong password. Write it down.
 3. Give the user **ALL PRIVILEGES** on the database.
+
+### Mailbox for logins
+
+The system emails staff and parents their first password, and staff their
+"forgot password" links. cPanel → **Email Accounts** → **Create**:
+
+- Email: `no-reply@sharebility.net`, with a strong password. Write it down.
+- Then click **Connect Devices** next to it and note the **Outgoing Server**
+  (often `mail.sharebility.net`) and its **SMTP port** (465 with SSL).
 
 ## 3. Build the upload in Codespaces
 
@@ -98,7 +109,11 @@ Then cPanel → **SSL/TLS Status** → **Run AutoSSL** so the address works with
 | `DB_DATABASE` | `cpuser_sms` |
 | `DB_USERNAME` | `cpuser_sms` |
 | `DB_PASSWORD` | the password from step 2 |
-| `SCHOOL_TENANT_DOMAIN` | leave **empty** for now (see step 10) |
+| `SCHOOL_TENANT_DOMAIN` | leave **empty** for now (see step 11) |
+| `ADMIN_PATH` | a private name for the Sharebility admin panel, e.g. `sharebility-hq-7k2`. Only Sharebility should know it; it is never linked from school or parent screens. |
+| `MAIL_HOST`, `MAIL_PORT` | the outgoing server and port from step 2 |
+| `MAIL_USERNAME`, `MAIL_FROM_ADDRESS` | `no-reply@sharebility.net` |
+| `MAIL_PASSWORD` | the mailbox password from step 2 |
 
 Save. **Keep the APP_KEY the same forever.** Changing it signs everyone out and
 makes some saved data unreadable.
@@ -148,7 +163,8 @@ cd /home/cpuser/sms && /usr/local/bin/php artisan app:super-admin you@sharebilit
 
 After a minute, check `install.log` says `... can now use the admin panel.`
 Then **delete this cron job straight away** (it contains your password), sign in
-at `https://sms.sharebility.net/admin` and change the password from your profile.
+at `https://sms.sharebility.net/` followed by your `ADMIN_PATH` (for example
+`https://sms.sharebility.net/sharebility-hq-7k2`) and change the password from your profile.
 
 ## 9. The permanent cron job (keep this one)
 
@@ -161,7 +177,15 @@ cron job processes every minute. Add it and **leave it there**:
 cd /home/cpuser/sms && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1
 ```
 
-## 10. Schools on their own subdomains (optional)
+## 10. Adding schools and their first administrator
+
+In the admin panel → **Schools** → **New school**. Then open the school →
+**Staff** → **New staff member**, choose the role **School administrator**
+and leave the password empty: the system makes a first password and emails it
+to them (it is also shown to you once). They choose their own password when
+they first sign in, then add their own staff the same way from **Staff**.
+
+## 11. Schools on their own subdomains (optional)
 
 Without this, each school uses `https://sms.sharebility.net/school/stmarys`.
 With it, they get `https://stmarys.sms.sharebility.net`.
@@ -177,7 +201,7 @@ With it, they get `https://stmarys.sms.sharebility.net`.
    warning: edit `.env`, set `SCHOOL_TENANT_DOMAIN=sms.sharebility.net`, and run
    `app:install` once more (step 7).
 
-## 11. SMS with Africa's Talking (when ready)
+## 12. SMS with Africa's Talking (when ready)
 
 1. Create an account at africastalking.com, then an app for Uganda. Note the
    **username** and generate an **API key**. Ask them for a **sender ID**
@@ -193,11 +217,11 @@ With it, they get `https://stmarys.sms.sharebility.net`.
    ```
 
 4. Run `app:install` once (step 7) so the new settings are picked up.
-5. In `/admin` → **Schools** → edit a school → switch **SMS to parents** on.
+5. In the admin panel → **Schools** → edit a school → switch **SMS to parents** on.
    Each school then chooses in its **School profile** whether payments send
    receipts automatically.
 
-Every SMS is listed in `/admin` → **SMS** (all schools) and in each school's
+Every SMS is listed in the admin panel → **SMS usage** (all schools) and in each school's
 **SMS log**, with its status and cost.
 
 With `SMS_DRIVER=log` (the default) nothing is really sent: messages are only
@@ -232,4 +256,6 @@ live in `.env` and `storage`, which the zip never contains.
 | Photos or logos don't show | Look in `install.log`. If it says storage links aren't allowed, add the `PUBLIC_DISK_ROOT=...` line it gives you to `.env` and run `app:install` again. |
 | SMS stay "queued" | The permanent cron job (step 9) is missing or uses the wrong PHP path. |
 | "Database connection refused" | Check `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` in `.env`; the names include the `cpuser_` prefix. |
-| Forgot the /admin password | Repeat step 8 with your email and a new password: it sets the new password. Delete the cron job straight after. |
+| Forgot the admin panel password | Repeat step 8 with your email and a new password: it sets the new password. Delete the cron job straight after. |
+| Forgot the admin panel address | It is `ADMIN_PATH` in `.env`. |
+| Logins aren't arriving by email | Check the `MAIL_...` settings, run `app:install` again, and look in `storage/logs/laravel-....log` for "Could not email a login". Whoever adds a person also sees the first password on screen, so nobody is stuck meanwhile. |

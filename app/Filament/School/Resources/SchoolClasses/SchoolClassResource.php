@@ -35,6 +35,14 @@ class SchoolClassResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
+    /**
+     * Only in the menu for those who set it up; others don't need it there.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canCreate();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return SchoolClassForm::configure($schema);

@@ -2,6 +2,8 @@
 
 namespace App\Filament\School\Resources\Students\RelationManagers;
 
+use App\Filament\School\Resources\Guardians\Actions\PortalAccessActions;
+use App\Filament\Shared\InitialsAvatars;
 use App\Enums\GuardianRelationship;
 use App\Filament\School\Resources\Guardians\Schemas\GuardianForm;
 use App\Models\Guardian;
@@ -57,6 +59,7 @@ class GuardiansRelationManager extends RelationManager
             ->recordTitleAttribute('name')
             ->columns([
                 ImageColumn::make('photo')
+                    ->defaultImageUrl(fn ($record): string => InitialsAvatars::for((string) $record->name))
                     ->disk('public')
                     ->circular(),
                 TextColumn::make('name'),
@@ -71,7 +74,9 @@ class GuardiansRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->label('New parent / guardian'),
+                    ->label('New parent / guardian')
+                    // A new parent gets their parents' portal login straight away
+                    ->after(fn (Guardian $record) => PortalAccessActions::welcome($record)),
                 AttachAction::make()
                     ->label('Link existing parent')
                     ->preloadRecordSelect()

@@ -11,7 +11,7 @@ use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -70,8 +70,8 @@ class AssessmentResource extends Resource
                     ->maxValue(1000)
                     ->default(100)
                     ->required(),
-                Select::make('classes')
-                    ->label('Classes')
+                CheckboxList::make('classes')
+                    ->label('Classes that sit it')
                     ->relationship(
                         'classes',
                         'name',
@@ -80,10 +80,11 @@ class AssessmentResource extends Resource
                             ->orderBy('sort_order')
                             ->orderBy('name'),
                     )
-                    ->multiple()
-                    ->preload()
-                    ->placeholder('All classes')
-                    ->helperText('Leave empty if every class sits it.'),
+                    ->columns(['default' => 3, 'sm' => 4, 'lg' => 6])
+                    ->gridDirection('row')
+                    ->bulkToggleable()
+                    ->helperText('Tick none if every class sits it.')
+                    ->columnSpanFull(),
                 TextInput::make('sort_order')
                     ->label('Order on the report card')
                     ->integer()

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Parent\Resources\Children;
 
+use App\Filament\Shared\InitialsAvatars;
 use App\Filament\Parent\Resources\Children\Pages\ListChildren;
 use App\Filament\Parent\Resources\Children\Pages\ViewChild;
 use App\Filament\School\Pages\ReportCards;
@@ -72,6 +73,7 @@ class ChildResource extends Resource
         return $table
             ->columns([
                 ImageColumn::make('photo')
+                    ->defaultImageUrl(fn ($record): string => InitialsAvatars::for((string) $record->full_name))
                     ->disk('public')
                     ->circular()
                     ->visibleFrom('sm'),

@@ -2,6 +2,7 @@
 
 namespace App\Filament\School\Resources\Students\Tables;
 
+use App\Filament\Shared\InitialsAvatars;
 use App\Enums\Gender;
 use App\Enums\Residence;
 use App\Enums\StudentStatus;
@@ -22,28 +23,38 @@ class StudentsTable
     public static function configure(Table $table): Table
     {
         return $table
+            // On phones the admission number and class sit under the name
+            ->extraAttributes(['class' => 'details-on-phone'])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['schoolClass', 'stream']))
             ->columns([
                 ImageColumn::make('photo')
+                    ->defaultImageUrl(fn ($record): string => InitialsAvatars::for((string) $record->full_name))
                     ->disk('public')
                     ->circular()
                     ->toggleable(),
                 TextColumn::make('admission_number')
                     ->label('Adm. no.')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('md'),
                 TextColumn::make('last_name')
                     ->label('Name')
                     ->formatStateUsing(fn (Student $record): string => $record->full_name)
+                    ->description(fn (Student $record): string => collect([$record->admission_number, $record->class_and_stream])->filter()->implode(' · '))
+                    ->weight('bold')
                     ->searchable(['first_name', 'last_name', 'other_names'])
                     ->sortable(['last_name', 'first_name']),
                 TextColumn::make('class_and_stream')
-                    ->label('Class'),
-                TextColumn::make('gender'),
+                    ->label('Class')
+                    ->visibleFrom('md'),
+                TextColumn::make('gender')
+                    ->visibleFrom('lg'),
                 TextColumn::make('residence')
-                    ->toggleable(),
+                    ->toggleable()
+                    ->visibleFrom('lg'),
                 TextColumn::make('status')
-                    ->badge(),
+                    ->badge()
+                    ->visibleFrom('md'),
                 TextColumn::make('lin')
                     ->label('LIN')
                     ->searchable()

@@ -15,6 +15,7 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -67,10 +68,20 @@ class CircularsTest extends TestCase
 
     public function test_a_circular_is_written_for_some_classes_with_an_attachment(): void
     {
+        // With no classes yet, the form says so rather than showing an empty list
+        Livewire::test(CreateCircular::class)->assertSee('This school has no classes yet');
+
         $s1 = SchoolClass::factory()->create(['school_id' => $this->school->getKey(), 'name' => 'S.1']);
         $s2 = SchoolClass::factory()->create(['school_id' => $this->school->getKey(), 'name' => 'S.2']);
+        $otherSchool = School::factory()->create();
+        DB::table('school_classes')->insert(['school_id' => $otherSchool->getKey(), 'name' => 'P.7 Elsewhere', 'sort_order' => 1]);
 
+        // Every class of this school is shown as a tick box, no other school's
         Livewire::test(CreateCircular::class)
+            ->assertSee('Tick the classes this is for')
+            ->assertSeeHtml('value="'.$s1->getKey().'"')
+            ->assertSeeHtml('value="'.$s2->getKey().'"')
+            ->assertDontSee('P.7 Elsewhere')
             ->fillForm([
                 'title' => 'S.1 science trip',
                 'audience' => CircularAudience::Parents->value,

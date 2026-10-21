@@ -5,6 +5,7 @@ namespace App\Filament\School\Pages;
 use App\Enums\AttendanceStatus;
 use App\Enums\SchoolAbility;
 use App\Enums\StudentStatus;
+use App\Filament\Shared\InitialsAvatars;
 use App\Models\AttendanceRecord;
 use App\Models\School;
 use App\Models\SchoolClass;
@@ -20,28 +21,21 @@ use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedSchema;
-use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\SelectColumn;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\TextInputColumn;
-use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use UnitEnum;
 
 /**
- * The daily class register. Choose the day and class, then mark each
- * student. Each choice saves straight away.
+ * The daily class register. Choose the day and the class or stream; every
+ * student is listed with one button for each choice (Present, Absent,
+ * Sick, Late, Permission). One tap saves it.
  */
-class TakeAttendance extends Page implements HasTable
+class TakeAttendance extends Page
 {
-    use InteractsWithTable;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
 
     protected static string|UnitEnum|null $navigationGroup = 'Academics';
@@ -54,6 +48,8 @@ class TakeAttendance extends Page implements HasTable
 
     /** @var array{date?: string|null, class_key?: string|null} */
     public ?array $selection = [];
+
+    public string $search = '';
 
     /** @var Collection<int, AttendanceRecord>|null */
     protected ?Collection $loadedRecords = null;
@@ -71,30 +67,23 @@ class TakeAttendance extends Page implements HasTable
     {
         $this->selectionForm->fill([
             'date' => today()->toDateString(),
-            'class_key' => collect($this->scope()->visibleClassOptions())->flatMap(fn (array $choices): array => array_keys($choices))->first(),
+            'class_key' => $this->defaultClassKey(),
         ]);
     }
 
     public function getSubheading(): ?string
     {
-        if (! $this->context()) {
-            return 'Choose a day and a class.';
-        }
-
-        $total = $this->studentsQuery()->count();
-        $records = $this->records();
-        $present = $records->filter(fn (AttendanceRecord $record): bool => $record->status->isAtSchool())->count();
-        $absent = $records->count() - $present;
-        $missing = $total - $records->count();
-
-        return "{$present} at school · {$absent} absent".($missing > 0 ? " · {$missing} not marked yet" : ' · Register complete');
+        return $this->context()
+            ? 'Tap one button for each student. It saves straight away.'
+            : 'Choose a day and a class.';
     }
 
     public function content(Schema $schema): Schema
     {
         return $schema->components([
             EmbeddedSchema::make('selectionForm'),
-            EmbeddedTable::make(),
+            View::make('filament.pages.attendance-register')
+                ->viewData(fn (): array => $this->registerData()),
         ]);
     }
 
@@ -112,58 +101,28 @@ class TakeAttendance extends Page implements HasTable
                             ->native(false)
                             ->displayFormat('D j M Y')
                             ->live()
-                            ->afterStateUpdated(fn () => $this->selectionChanged()),
+                            ->afterStateUpdated(fn () => $this->loadedRecords = null),
                         Select::make('class_key')
-                            ->label('Class')
+                            ->label('Class or stream')
                             ->options(fn (): array => $this->scope()->visibleClassOptions())
                             ->searchable()
                             ->live()
-                            ->afterStateUpdated(fn () => $this->selectionChanged()),
+                            ->afterStateUpdated(fn () => $this->loadedRecords = null),
                     ]),
             ]);
     }
 
-    public function table(Table $table): Table
+    /**
+     * Saves one student's attendance for the chosen day.
+     */
+    public function mark(int $studentId, string $status): void
     {
-        return $table
-            ->query(fn (): Builder => $this->studentsQuery())
-            ->columns([
-                TextColumn::make('last_name')
-                    ->label('Student')
-                    ->formatStateUsing(fn (Student $record): string => $record->full_name)
-                    ->description(fn (Student $record): ?string => trim($record->admission_number.' '.($record->stream ? '· '.$record->stream->name : '')))
-                    ->searchable(['first_name', 'last_name', 'admission_number']),
-                SelectColumn::make('attendance')
-                    ->label('Attendance')
-                    ->options(AttendanceStatus::class)
-                    ->placeholder('Not marked')
-                    ->state(fn (Student $record): ?string => $this->records()->get($record->getKey())?->status->value)
-                    ->updateStateUsing(function (Student $record, $state): mixed {
-                        $this->save($record, filled($state) ? AttendanceStatus::from($state) : null);
+        $choice = AttendanceStatus::tryFrom($status);
+        $student = $this->studentsQuery()->find($studentId);
 
-                        return $state;
-                    }),
-                TextInputColumn::make('note')
-                    ->label('Note')
-                    ->placeholder('e.g. sick, sent home for fees')
-                    ->state(fn (Student $record): ?string => $this->records()->get($record->getKey())?->note)
-                    ->rules(['nullable', 'max:255'])
-                    ->disabled(fn (Student $record): bool => ! $this->records()->has($record->getKey()))
-                    ->updateStateUsing(function (Student $record, $state): mixed {
-                        $existing = $this->records()->get($record->getKey());
-                        abort_unless($existing && $this->context(), 403);
+        abort_unless($choice && $student && $this->context(), 403);
 
-                        $existing->update(['note' => filled($state) ? trim((string) $state) : null]);
-                        $this->loadedRecords = null;
-
-                        return $state;
-                    })
-                    ->visibleFrom('md'),
-            ])
-            ->defaultSort(fn (Builder $query): Builder => $query->orderBy('last_name')->orderBy('first_name'))
-            ->paginated([50, 100, 'all'])
-            ->defaultPaginationPageOption(100)
-            ->emptyStateHeading(fn (): string => $this->context() ? 'No students in this class' : 'Choose a day and a class');
+        $this->save($student, $choice);
     }
 
     protected function getHeaderActions(): array
@@ -172,6 +131,7 @@ class TakeAttendance extends Page implements HasTable
             Action::make('markRestPresent')
                 ->label('Mark the rest present')
                 ->icon(Heroicon::OutlinedCheckCircle)
+                ->color('success')
                 ->visible(fn (): bool => $this->context() !== null)
                 ->action(function (): void {
                     $marked = 0;
@@ -191,6 +151,46 @@ class TakeAttendance extends Page implements HasTable
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    protected function registerData(): array
+    {
+        if (! $this->context()) {
+            return ['ready' => false];
+        }
+
+        $students = $this->studentsQuery()
+            ->when(filled(trim($this->search)), fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                ->where('first_name', 'like', '%'.trim($this->search).'%')
+                ->orWhere('last_name', 'like', '%'.trim($this->search).'%')
+                ->orWhere('admission_number', 'like', '%'.trim($this->search).'%')))
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        $records = $this->records();
+        $total = $this->studentsQuery()->count();
+        $counts = collect(AttendanceStatus::cases())
+            ->mapWithKeys(fn (AttendanceStatus $status): array => [$status->value => $records->filter(fn (AttendanceRecord $record): bool => $record->status === $status)->count()]);
+
+        return [
+            'ready' => true,
+            'statuses' => AttendanceStatus::cases(),
+            'rows' => $students->map(fn (Student $student): array => [
+                'id' => $student->getKey(),
+                'name' => $student->full_name,
+                'sub' => collect([$student->admission_number, $student->stream?->name])->filter()->implode(' · '),
+                'photo' => $student->photoUrl() ?? InitialsAvatars::for($student->full_name),
+                'status' => $records->get($student->getKey())?->status?->value,
+            ])->all(),
+            'counts' => $counts->all(),
+            'notMarked' => max(0, $total - $records->count()),
+            'searching' => filled(trim($this->search)),
+            'total' => $total,
+        ];
+    }
+
     protected function save(Student $student, ?AttendanceStatus $status): void
     {
         [$date] = $this->context() ?? [null];
@@ -198,6 +198,28 @@ class TakeAttendance extends Page implements HasTable
 
         AttendanceRecord::record($student, $date->toDateString(), $status, by: Filament::auth()->user());
         $this->loadedRecords = null;
+    }
+
+    /**
+     * A class teacher starts on their own class or stream; others on the
+     * first class they can see.
+     */
+    protected function defaultClassKey(): ?string
+    {
+        $options = collect($this->scope()->visibleClassOptions())->flatMap(fn (array $choices): array => array_keys($choices));
+        $user = Filament::auth()->user();
+
+        $own = SchoolClass::query()->withoutGlobalScopes()
+            ->where('school_id', $this->school()->getKey())
+            ->with('streams')
+            ->get()
+            ->flatMap(fn (SchoolClass $class): array => [
+                ...($class->class_teacher_id === $user?->getKey() ? ['c:'.$class->getKey()] : []),
+                ...$class->streams->where('class_teacher_id', $user?->getKey())->map(fn ($stream): string => 's:'.$stream->getKey())->all(),
+            ])
+            ->first(fn (string $key): bool => $options->contains($key));
+
+        return $own ?? $options->first();
     }
 
     /**
@@ -263,12 +285,6 @@ class TakeAttendance extends Page implements HasTable
                 ->get()
                 ->keyBy('student_id')
             : collect();
-    }
-
-    protected function selectionChanged(): void
-    {
-        $this->loadedRecords = null;
-        $this->resetPage();
     }
 
     protected function scope(): TeacherScope

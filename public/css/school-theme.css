@@ -1,0 +1,899 @@
+/*
+ * School Management System: the "glass" look.
+ *
+ * Frosted, see-through panels over a soft colourful background, rounded
+ * corners, app-style icons and big touch targets, in the spirit of iPhone
+ * and iPad. Loaded after Filament's own styles (which sit in CSS layers),
+ * so these plain rules always take effect.
+ */
+
+/* ---------- Colours and shared values ---------- */
+
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.66);
+    --glass-strong: rgba(255, 255, 255, 0.82);
+    --glass-solid: rgba(255, 255, 255, 0.94);
+    --glass-border: rgba(255, 255, 255, 0.85);
+    --glass-edge: rgba(15, 23, 42, 0.06);
+    --glass-shadow: 0 10px 30px -12px rgba(30, 41, 90, 0.18), 0 1px 2px rgba(15, 23, 42, 0.05);
+    --glass-blur: saturate(180%) blur(22px);
+    --card-radius: 1.375rem;
+    --control-radius: 0.875rem;
+    --ink: #0f172a;
+    --ink-soft: #475569;
+    --wall-1: rgba(0, 122, 255, 0.30);
+    --wall-2: rgba(175, 82, 222, 0.22);
+    --wall-3: rgba(52, 199, 89, 0.18);
+    --wall-4: rgba(255, 149, 0, 0.14);
+    --wall-base-1: #eaf1fb;
+    --wall-base-2: #f5f0fb;
+    --app-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-family, "Inter"), "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.fi-panel-parent {
+    --wall-1: rgba(16, 185, 129, 0.28);
+    --wall-2: rgba(50, 173, 230, 0.22);
+    --wall-3: rgba(255, 204, 0, 0.16);
+    --wall-4: rgba(175, 82, 222, 0.12);
+    --wall-base-1: #e9f7f1;
+    --wall-base-2: #eef5fb;
+}
+
+.fi-panel-admin {
+    --wall-1: rgba(255, 149, 0, 0.26);
+    --wall-2: rgba(255, 45, 85, 0.16);
+    --wall-3: rgba(88, 86, 214, 0.16);
+    --wall-4: rgba(52, 199, 89, 0.10);
+    --wall-base-1: #fbf3e8;
+    --wall-base-2: #f6f0fb;
+}
+
+.dark {
+    --glass-bg: rgba(28, 30, 38, 0.62);
+    --glass-strong: rgba(24, 26, 34, 0.8);
+    --glass-solid: rgba(24, 26, 34, 0.94);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-edge: rgba(255, 255, 255, 0.06);
+    --glass-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --ink: #f1f5f9;
+    --ink-soft: #94a3b8;
+    --wall-base-1: #0b1020;
+    --wall-base-2: #120d1f;
+}
+
+/* ---------- The background ("wallpaper") ---------- */
+
+html {
+    background: var(--wall-base-1);
+}
+
+.fi-body {
+    background: transparent;
+    font-family: var(--app-font);
+    color: var(--ink);
+}
+
+.fi-body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(1100px 760px at 8% -8%, var(--wall-1), transparent 62%),
+        radial-gradient(900px 700px at 102% 4%, var(--wall-2), transparent 58%),
+        radial-gradient(1000px 800px at 40% 112%, var(--wall-3), transparent 60%),
+        radial-gradient(700px 600px at 96% 92%, var(--wall-4), transparent 60%),
+        linear-gradient(170deg, var(--wall-base-1) 0%, var(--wall-base-2) 100%);
+}
+
+/* ---------- Glass surfaces ---------- */
+
+.fi-section:not(.fi-section-not-contained):not(.fi-aside),
+.fi-section:not(.fi-section-not-contained).fi-aside > .fi-section-content-ctn,
+.fi-ta-ctn,
+.fi-wi-stats-overview-stat,
+.fi-sc-tabs.fi-contained,
+.fi-sc-wizard.fi-contained,
+.fi-empty-state:not(.fi-empty-state-not-contained),
+.fi-callout,
+.fi-in-repeatable.fi-contained > .fi-in-repeatable-item,
+.fi-fo-repeater .fi-fo-repeater-item,
+.fi-pagination .fi-pagination-items,
+.fi-tabs:not(.fi-contained),
+.glass-card {
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--glass-shadow);
+}
+
+/* Blur costs battery on small phones; the see-through tint alone looks the same there */
+@media (min-width: 1024px) {
+    .fi-section:not(.fi-section-not-contained):not(.fi-aside),
+    .fi-ta-ctn,
+    .fi-wi-stats-overview-stat,
+    .glass-card {
+        -webkit-backdrop-filter: var(--glass-blur);
+        backdrop-filter: var(--glass-blur);
+    }
+}
+
+.fi-in-repeatable.fi-contained > .fi-in-repeatable-item,
+.fi-fo-repeater .fi-fo-repeater-item {
+    background-color: var(--glass-strong);
+    border-radius: 1rem;
+    box-shadow: none;
+}
+
+.fi-ta-ctn {
+    overflow: hidden;
+}
+
+.fi-ta-header,
+.fi-ta-header-toolbar,
+.fi-section-header {
+    border-color: var(--glass-edge) !important;
+}
+
+.fi-ta-table > thead,
+.fi-ta-table > thead > tr,
+.fi-ta-table > thead th {
+    background-color: transparent !important;
+}
+
+.fi-ta-table > thead th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+}
+
+.fi-ta-table > tbody > tr {
+    border-color: var(--glass-edge);
+}
+
+.fi-ta-row:hover,
+.fi-ta-row.fi-clickable:hover {
+    background-color: rgba(0, 122, 255, 0.05) !important;
+}
+
+/* ---------- Top bar and sidebar ---------- */
+
+.fi-topbar {
+    background-color: var(--glass-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: 0 1px 0 var(--glass-edge);
+}
+
+.fi-sidebar {
+    background-color: var(--glass-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+}
+
+@media (min-width: 1024px) {
+    .fi-sidebar {
+        background-color: rgba(255, 255, 255, 0.42);
+        border-inline-end: 1px solid var(--glass-border);
+    }
+
+    .dark .fi-sidebar {
+        background-color: rgba(20, 22, 30, 0.45);
+    }
+}
+
+.fi-body-has-topbar .fi-sidebar-header {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.fi-sidebar-group-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+}
+
+.fi-sidebar-item-btn {
+    border-radius: 0.75rem;
+    padding-block: 0.4rem;
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background-color: rgba(0, 122, 255, 0.12);
+}
+
+.fi-panel-parent .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background-color: rgba(16, 185, 129, 0.14);
+}
+
+.fi-panel-admin .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background-color: rgba(255, 149, 0, 0.16);
+}
+
+/* Sidebar icons as small app icons, like iPhone Settings */
+.fi-sidebar-item-icon {
+    box-sizing: content-box;
+    padding: 0.3rem;
+    border-radius: 0.5rem;
+    color: #fff !important;
+    background: var(--nav-color, var(--primary-500));
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+    width: 1rem !important;
+    height: 1rem !important;
+}
+
+.fi-sidebar-item-btn[href$="/school"],
+.fi-sidebar-item-btn[href$="/parent"],
+.fi-sidebar-item-btn[href$="/admin"] { --nav-color: #007aff; }
+[href$="/students"] { --nav-color: #007aff; }
+[href$="/parents"] { --nav-color: #af52de; }
+[href$="/admissions"] { --nav-color: #5856d6; }
+[href$="/enter-marks"] { --nav-color: #ff9500; }
+[href$="/report-cards"] { --nav-color: #ff2d55; }
+[href$="/exams"] { --nav-color: #ff9f0a; }
+[href$="/grading-scales"] { --nav-color: #a2845e; }
+[href$="/attendance"] { --nav-color: #34c759; }
+[href$="/class-fees"] { --nav-color: #30b0c7; }
+[href$="/fee-balances"] { --nav-color: #34c759; }
+[href$="/invoices"] { --nav-color: #5ac8fa; }
+[href$="/payments"] { --nav-color: #00c7be; }
+[href$="/fee-structure"] { --nav-color: #32ade6; }
+[href$="/circulars"] { --nav-color: #ff3b30; }
+[href$="/sms"] { --nav-color: #34c759; }
+[href$="/staff"] { --nav-color: #8e8e93; }
+[href$="/classes"] { --nav-color: #5856d6; }
+[href$="/subjects"] { --nav-color: #ff9500; }
+[href$="/terms"] { --nav-color: #ff2d55; }
+[href$="/children"] { --nav-color: #10b981; }
+[href$="/schools"] { --nav-color: #ff9500; }
+
+/* ---------- Headings ---------- */
+
+.fi-header-heading {
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+}
+
+.fi-header-subheading {
+    color: var(--ink-soft);
+}
+
+.fi-section-header-heading,
+.fi-ta-header-heading,
+.fi-wi-chart .fi-section-header-heading {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* ---------- Buttons, fields, badges ---------- */
+
+.fi-btn {
+    border-radius: var(--control-radius);
+    font-weight: 600;
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined) {
+    box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--primary-500) 70%, transparent);
+}
+
+.fi-icon-btn {
+    border-radius: 999px;
+}
+
+.fi-input-wrp {
+    border-radius: var(--control-radius);
+    background-color: rgba(255, 255, 255, 0.86);
+}
+
+.dark .fi-input-wrp {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.fi-badge {
+    border-radius: 999px;
+}
+
+/* Bigger targets for fingers (Apple recommends at least 44px) */
+@media (pointer: coarse) {
+    .fi-btn {
+        min-height: 2.75rem;
+    }
+
+    .fi-input-wrp,
+    .fi-select-input {
+        min-height: 2.75rem;
+    }
+
+    .fi-sidebar-item-btn {
+        min-height: 2.75rem;
+    }
+}
+
+/* ---------- Pop-ups, menus, notifications ---------- */
+
+.fi-modal > .fi-modal-window-ctn > .fi-modal-window,
+.fi-dropdown-panel,
+.fi-global-search-results-ctn,
+.fi-no-notification:not(.fi-inline),
+.fi-fo-date-time-picker .fi-fo-date-time-picker-panel {
+    background-color: var(--glass-solid);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 24px 60px -20px rgba(15, 23, 42, 0.35);
+}
+
+.fi-modal:not(.fi-modal-slide-over) > .fi-modal-window-ctn > .fi-modal-window {
+    border-radius: 1.5rem;
+}
+
+.fi-dropdown-panel {
+    border-radius: 1rem;
+}
+
+.fi-no-notification:not(.fi-inline) {
+    border-radius: 1.125rem;
+}
+
+.fi-modal-close-overlay {
+    background-color: rgba(15, 23, 42, 0.28) !important;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+/* On phones, pop-ups slide up from the bottom like an iPhone sheet */
+@media (max-width: 639px) {
+    .fi-modal:not(.fi-modal-slide-over) > .fi-modal-window-ctn {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+
+    .fi-modal:not(.fi-modal-slide-over) > .fi-modal-window-ctn > .fi-modal-window {
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 92dvh;
+        border-radius: 1.5rem 1.5rem 0 0;
+        border-bottom: 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* ---------- Sign-in pages ---------- */
+
+.fi-simple-layout {
+    background: transparent;
+}
+
+.fi-simple-main {
+    background-color: var(--glass-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 1.75rem;
+    box-shadow: 0 30px 80px -30px rgba(30, 41, 90, 0.35);
+}
+
+.fi-simple-header-heading {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* ---------- Stats ---------- */
+
+.fi-wi-stats-overview-stat-value {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.fi-wi-stats-overview-stat-label {
+    color: var(--ink-soft);
+}
+
+/* ---------- Home screen: greeting and app tiles ---------- */
+
+.home-hello {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.25rem 0.25rem;
+}
+
+.home-hello-avatar {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 999px;
+    object-fit: cover;
+    flex: none;
+    box-shadow: 0 0 0 3px var(--glass-border);
+    background: linear-gradient(160deg, #5ac8fa, #007aff);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 1.15rem;
+}
+
+.home-hello-text {
+    min-width: 0;
+}
+
+.home-hello h2 {
+    margin: 0;
+    font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+}
+
+.home-hello p {
+    margin: 0.2rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+}
+
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.1rem 0.5rem;
+    padding: 1.25rem 0.75rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .app-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .app-grid {
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+}
+
+.app-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    text-decoration: none;
+    color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 1rem;
+    padding: 0.25rem 0;
+}
+
+.app-icon {
+    width: clamp(3.4rem, 15vw, 4.1rem);
+    height: clamp(3.4rem, 15vw, 4.1rem);
+    border-radius: 24%;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background-color: var(--app);
+    background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 55%);
+    box-shadow: 0 8px 18px -8px var(--app), inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+    transition: transform 0.15s ease;
+}
+
+.app-icon svg {
+    width: 46%;
+    height: 46%;
+}
+
+.app-tile:hover .app-icon {
+    transform: translateY(-2px);
+}
+
+.app-tile:active .app-icon {
+    transform: scale(0.92);
+}
+
+.app-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.2;
+    max-width: 6.5rem;
+}
+
+.app-badge {
+    position: absolute;
+    top: -0.2rem;
+    inset-inline-end: calc(50% - clamp(2rem, 8vw, 2.4rem));
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: #ff3b30;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 0 2px var(--glass-solid);
+}
+
+/* ---------- Bottom tab bar on phones and tablets ---------- */
+
+.tab-bar {
+    display: none;
+}
+
+@media (max-width: 1023px) {
+    .tab-bar {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        position: fixed;
+        z-index: 25;
+        inset-inline: 0.75rem;
+        bottom: calc(0.6rem + env(safe-area-inset-bottom));
+        padding: 0.35rem;
+        border-radius: 1.6rem;
+        background-color: var(--glass-strong);
+        -webkit-backdrop-filter: var(--glass-blur);
+        backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 18px 40px -16px rgba(15, 23, 42, 0.35);
+        max-width: 34rem;
+        margin-inline: auto;
+    }
+
+    .fi-main-ctn,
+    .fi-main {
+        padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+    }
+}
+
+.tab-bar a,
+.tab-bar button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.4rem 0.25rem;
+    border-radius: 1.2rem;
+    border: 0;
+    background: none;
+    color: var(--ink-soft);
+    font: 600 0.68rem/1.1 var(--app-font);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+}
+
+.tab-bar svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.tab-bar .is-active {
+    color: var(--primary-600);
+    background: color-mix(in srgb, var(--primary-500) 12%, transparent);
+}
+
+/* ---------- Class tiles (fees by class, attendance) ---------- */
+
+.class-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+    gap: 0.75rem;
+}
+
+.class-tile {
+    display: block;
+    text-align: start;
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border-radius: 1.1rem;
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    text-decoration: none;
+}
+
+.class-tile:hover {
+    transform: translateY(-1px);
+}
+
+.class-tile.is-active {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-500) 35%, transparent), var(--glass-shadow);
+}
+
+.class-tile-name {
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+}
+
+.class-tile-meta {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 0.1rem;
+}
+
+.progress {
+    margin-top: 0.6rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: rgba(120, 120, 128, 0.16);
+    overflow: hidden;
+}
+
+.progress > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #34c759, #30d158);
+}
+
+.progress.is-low > span {
+    background: linear-gradient(90deg, #ff9500, #ffb340);
+}
+
+.progress.is-very-low > span {
+    background: linear-gradient(90deg, #ff3b30, #ff6961);
+}
+
+/* ---------- Attendance: one tap per student ---------- */
+
+.register {
+    display: flex;
+    flex-direction: column;
+}
+
+.register-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    padding: 0.8rem 1rem;
+    border-top: 1px solid var(--glass-edge);
+}
+
+.register-row:first-child {
+    border-top: 0;
+}
+
+.register-who {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.register-photo {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 999px;
+    object-fit: cover;
+    flex: none;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(160deg, #a1a1aa, #71717a);
+}
+
+.register-name {
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.register-sub {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+}
+
+.register-choices {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.35rem;
+    flex: 1 1 22rem;
+    padding: 0.25rem;
+    border-radius: 0.95rem;
+    background: rgba(120, 120, 128, 0.12);
+}
+
+.register-choice {
+    border: 0;
+    border-radius: 0.75rem;
+    padding: 0.55rem 0.25rem;
+    min-height: 2.75rem;
+    background: transparent;
+    color: var(--ink-soft);
+    font: 700 0.8rem/1.1 var(--app-font);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+
+.register-choice svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.register-choice:active {
+    transform: scale(0.95);
+}
+
+.register-choice.is-chosen {
+    color: #fff;
+    background: var(--choice);
+    box-shadow: 0 6px 14px -6px var(--choice);
+}
+
+.register-choice[data-status="present"] { --choice: #34c759; }
+.register-choice[data-status="absent"] { --choice: #ff3b30; }
+.register-choice[data-status="sick"] { --choice: #af52de; }
+.register-choice[data-status="late"] { --choice: #ff9500; }
+.register-choice[data-status="excused"] { --choice: #8e8e93; }
+
+.register-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.count-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+}
+
+.count-pill i {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 999px;
+    background: var(--dot, #8e8e93);
+}
+
+/* ---------- Parents: children as cards ---------- */
+
+.child-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 1rem;
+}
+
+.child-card {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.1rem;
+    text-decoration: none;
+    color: var(--ink);
+}
+
+.child-card-photo {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1.2rem;
+    object-fit: cover;
+    flex: none;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(160deg, #34d399, #059669);
+}
+
+.child-card-name {
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+}
+
+.child-card-meta {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+}
+
+.child-card-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+}
+
+.fact {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(120, 120, 128, 0.14);
+}
+
+.fact.is-good { background: rgba(52, 199, 89, 0.16); color: #1f7a38; }
+.fact.is-bad { background: rgba(255, 59, 48, 0.14); color: #b42318; }
+.dark .fact.is-good { color: #4ade80; }
+.dark .fact.is-bad { color: #fca5a5; }
+
+/* ---------- People who prefer less see-through ---------- */
+
+@media (prefers-reduced-transparency: reduce) {
+    :root {
+        --glass-bg: #ffffff;
+        --glass-strong: #ffffff;
+        --glass-solid: #ffffff;
+    }
+
+    .dark {
+        --glass-bg: #1c1e26;
+        --glass-strong: #1c1e26;
+        --glass-solid: #1c1e26;
+    }
+
+    * {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
+
+/* ---------- Printing: plain paper ---------- */
+
+@media print {
+    .fi-body::before,
+    .tab-bar {
+        display: none !important;
+    }
+}
+
+/* Sign-in card: a little space from the screen edges on phones */
+@media (max-width: 639px) {
+    .fi-simple-main {
+        width: calc(100% - 1.5rem) !important;
+        margin-inline: auto;
+        padding-inline: 1.25rem;
+    }
+}
+
+/* Filament leaves an empty actions row above some tables on phones */
+.fi-ta-header-toolbar > .fi-ta-actions:not(:has(*)) {
+    display: none;
+}
+
+/* Money figures stay on one line on smaller cards */
+.fi-wi-stats-overview-stat-value {
+    font-size: clamp(1.35rem, 2.1vw, 1.875rem);
+    line-height: 1.15;
+}
+
+/* Tables that fold details under the name on phones show them in their own columns on bigger screens */
+@media (min-width: 768px) {
+    .details-on-phone .fi-ta-cell-last-name .fi-ta-text-description,
+    .details-on-phone .fi-ta-cell-name .fi-ta-text-description {
+        display: none;
+    }
+}
+
+/* ...and on phones their View / Edit links make way: tapping the row opens it */
+@media (max-width: 767px) {
+    .details-on-phone .fi-ta-row > td.fi-ta-cell:last-child:not([class*="fi-ta-cell-"]),
+    .details-on-phone .fi-ta-actions-header-cell {
+        display: none;
+    }
+}

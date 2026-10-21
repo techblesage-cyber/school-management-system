@@ -73,8 +73,9 @@ return [
             'model' => env('AUTH_MODEL', User::class),
         ],
 
+        // Phone number + password; the password picks the school's account
         'parent_accounts' => [
-            'driver' => 'eloquent',
+            'driver' => 'parent_accounts',
             'model' => App\Models\ParentAccount::class,
         ],
 

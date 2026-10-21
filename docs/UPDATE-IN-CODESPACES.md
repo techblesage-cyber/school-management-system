@@ -1,7 +1,7 @@
 # Adding an update zip in Codespaces
 
 Use this whenever you receive an update zip (for example
-`school-system-update-2026-10-21.zip`). Each step says where it goes:
+`school-system-update-2026-10-21b.zip`). Each step says where it goes:
 **Terminal** means type it in the Codespaces terminal and press Enter.
 
 ## 1. Save where you are first
@@ -27,7 +27,7 @@ Codespaces, onto the top folder (`school-management-system`), not inside
 **Terminal** (use your zip's real name):
 
 ```bash
-unzip -o school-system-update-2026-10-21.zip && rm school-system-update-2026-10-21.zip
+unzip -o school-system-update-2026-10-21b.zip && rm school-system-update-2026-10-21b.zip
 ```
 
 `-o` replaces the old copies of the files. Nothing else in your project is
@@ -62,7 +62,8 @@ php artisan optimize:clear && php artisan filament:assets
 php artisan test
 ```
 
-All should pass (the update notes say how many to expect).
+All should pass (the update notes say how many to expect; for the
+2026-10-21b update it is 111).
 If any fail, copy the red part and send it to Claude.
 
 ## 7. Try it
@@ -93,10 +94,14 @@ Then sign in:
 | `/school/login` (bursar) | `bursar@demo.test` | `password123` |
 | `/school/login` (secretary) | `secretary@demo.test` | `password123` |
 | `/parent` (parent of 2 children) | phone `0700 000 001` | `parent123` |
-| `/admin` | your own super admin email | your password |
+| `/admin` (Sharebility only) | your own super admin email | your password |
 
 The demo school only goes in a codespace, never on the live server. To remove
 it, delete "Demo Secondary School" in `/admin` → Schools.
+
+Emails (first logins, "forgot password" links) aren't really sent from a
+codespace: they are written to `storage/logs/laravel.log`, so you can open
+that file to read them.
 
 ## 8. Save to GitHub
 

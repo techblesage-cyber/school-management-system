@@ -17,7 +17,9 @@ use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
 use Filament\Facades\Filament;
+use App\Notifications\StaffLogin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -209,6 +211,7 @@ class RolesPermissionsTest extends TestCase
         $sharedTeacher->update(['password' => 'their-own-password']);
         $subject = Subject::factory()->create(['school_id' => $this->school->getKey()]);
         $this->signInAs($admin);
+        Notification::fake();
 
         Livewire::test(Staff::class)
             ->assertCanSeeTableRecords([$admin])
@@ -216,10 +219,10 @@ class RolesPermissionsTest extends TestCase
             ->callTableAction('create', data: [
                 'email' => 'New.Bursar@Example.com',
                 'name' => 'New Bursar',
-                'password' => 'bursar-pass-1',
                 'role' => StaffRole::Bursar->value,
             ])
             ->assertHasNoTableActionErrors()
+            ->assertNotified('New Bursar added')
             ->callTableAction('create', data: [
                 'email' => $sharedTeacher->email,
                 'role' => StaffRole::Teacher->value,
@@ -232,13 +235,25 @@ class RolesPermissionsTest extends TestCase
             ])
             ->assertHasTableActionErrors(['email']);
 
+        // The new person's first password is made by the system and emailed;
+        // they choose their own when they first sign in
         $bursar = User::where('email', 'new.bursar@example.com')->firstOrFail();
         $this->assertSame(StaffRole::Bursar, $bursar->roleAt($this->school));
-        $this->assertTrue(Hash::check('bursar-pass-1', $bursar->password));
         $this->assertFalse($bursar->isSuperAdmin());
+        $this->assertTrue($bursar->must_change_password);
+        $sentPassword = null;
+        Notification::assertSentTo($bursar, StaffLogin::class, function (StaffLogin $mail) use ($bursar, &$sentPassword): bool {
+            $sentPassword = $mail->password;
+            $text = implode(' ', $mail->toMail($bursar)->introLines);
 
-        // The existing account keeps its password and its other school
+            return $mail->school->is($this->school) && str_contains($text, 'as Bursar') && str_contains($text, (string) $mail->password);
+        });
+        $this->assertTrue(Hash::check($sentPassword, $bursar->password));
+
+        // The existing account keeps its password and its other school, and is told by email
         $sharedTeacher->refresh();
+        Notification::assertSentTo($sharedTeacher, StaffLogin::class, fn (StaffLogin $mail): bool => $mail->password === null);
+        $this->assertFalse($sharedTeacher->must_change_password);
         $this->assertTrue(Hash::check('their-own-password', $sharedTeacher->password));
         $this->assertSame(StaffRole::Teacher, $sharedTeacher->roleAt($this->school));
         $this->assertSame(StaffRole::Teacher, $sharedTeacher->roleAt($otherSchool));
@@ -254,27 +269,35 @@ class RolesPermissionsTest extends TestCase
 
         $page = Livewire::test(Staff::class);
 
-        // Their own staff: role, name and password can all be changed
+        // Their own staff: role and name can be changed, and a new login sent
         $page->callTableAction('edit', $ownTeacher, data: [
             'name' => 'Renamed',
             'email' => $ownTeacher->email,
-            'password' => 'brand-new-pass',
             'role' => StaffRole::Secretary->value,
         ])->assertHasNoTableActionErrors();
 
         $ownTeacher->refresh()->forgetSchoolRoles();
         $this->assertSame('Renamed', $ownTeacher->name);
-        $this->assertTrue(Hash::check('brand-new-pass', $ownTeacher->password));
         $this->assertSame(StaffRole::Secretary, $ownTeacher->roleAt($this->school));
 
-        // Someone who also works elsewhere: only the role here changes
+        Notification::fake();
+        $oldOwnPassword = $ownTeacher->password;
+        $page->callTableAction('sendLogin', $ownTeacher)->assertNotified('New login for Renamed');
+        $this->assertNotSame($oldOwnPassword, $ownTeacher->refresh()->password);
+        $this->assertTrue($ownTeacher->must_change_password);
+        Notification::assertSentTo($ownTeacher, StaffLogin::class, fn (StaffLogin $mail): bool => $mail->isNewPassword && Hash::check($mail->password, $ownTeacher->password));
+
+        // Someone who also works elsewhere: only the role here changes, and
+        // this school can't send them a new password
         $oldPassword = $sharedTeacher->password;
         $page->callTableAction('edit', $sharedTeacher, data: [
             'name' => 'Hijacked',
             'email' => 'attacker@example.com',
             'password' => 'attacker-pass',
             'role' => StaffRole::Bursar->value,
-        ])->assertHasNoTableActionErrors();
+        ])->assertHasNoTableActionErrors()
+            ->assertTableActionHidden('sendLogin', $sharedTeacher)
+            ->assertTableActionHidden('sendLogin', $admin);
 
         $sharedTeacher->refresh()->forgetSchoolRoles();
         $this->assertNotSame('Hijacked', $sharedTeacher->name);

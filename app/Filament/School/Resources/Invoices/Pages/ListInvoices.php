@@ -10,7 +10,7 @@ use App\Models\SchoolClass;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
@@ -43,15 +43,17 @@ class ListInvoices extends ListRecords
             ->modalSubmitActionLabel('Create invoices')
             ->schema([
                 FeeFields::term(),
-                Select::make('classes')
+                CheckboxList::make('classes')
                     ->label('Only these classes')
-                    ->multiple()
                     ->options(fn (): array => SchoolClass::query()
                         ->where('school_id', Filament::getTenant()?->getKey())
                         ->orderBy('sort_order')
                         ->pluck('name', 'id')
                         ->all())
-                    ->placeholder('All classes'),
+                    ->columns(['default' => 3, 'sm' => 4])
+                    ->gridDirection('row')
+                    ->bulkToggleable()
+                    ->helperText('Tick none to bill every class.'),
             ])
             ->action(function (array $data): void {
                 $term = AcademicTerm::query()->withoutGlobalScopes()

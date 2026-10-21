@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Auth\ParentAccountProvider;
+use Illuminate\Support\Facades\Auth;
 use App\Services\Sms\AfricasTalkingDriver;
 use App\Services\Sms\LogDriver;
 use App\Services\Sms\SmsDriver;
@@ -27,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Parents' portal sign-in: see App\Auth\ParentAccountProvider
+        Auth::provider('parent_accounts', fn ($app, array $config): ParentAccountProvider => new ParentAccountProvider($app['hash'], $config['model']));
+
         // GitHub Codespaces shows the app over https, but passes requests to
         // Laravel over plain http. Without this, pages link their styles and
         // scripts with http:// and the browser blocks them (unstyled pages).

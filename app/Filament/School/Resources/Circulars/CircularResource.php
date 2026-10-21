@@ -9,6 +9,7 @@ use App\Filament\School\Resources\Circulars\Pages\EditCircular;
 use App\Filament\School\Resources\Circulars\Pages\ListCirculars;
 use App\Filament\School\Resources\Circulars\Pages\ViewCircular;
 use App\Models\Circular;
+use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\Sms\Sms;
 use BackedEnum;
@@ -18,10 +19,10 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -89,7 +90,8 @@ class CircularResource extends Resource
                             ->default(CircularAudience::Parents->value)
                             ->required()
                             ->live(),
-                        Select::make('classes')
+                        // Tick boxes, so every class is in view without opening a list
+                        CheckboxList::make('classes')
                             ->label('Only the parents of these classes')
                             ->relationship(
                                 'classes',
@@ -99,11 +101,14 @@ class CircularResource extends Resource
                                     ->orderBy('sort_order')
                                     ->orderBy('name'),
                             )
-                            ->multiple()
-                            ->preload()
-                            ->placeholder('All classes')
-                            ->helperText('Leave empty to send to the parents of every class.')
-                            ->visible(fn (Get $get): bool => self::audience($get('audience'))?->includesParents() ?? true),
+                            ->columns(['default' => 3, 'sm' => 4, 'lg' => 6])
+                            ->gridDirection('row')
+                            ->bulkToggleable()
+                            ->helperText(fn (): string => self::hasClasses()
+                                ? 'Tick the classes this is for. Tick none to send it to the parents of every class.'
+                                : 'This school has no classes yet, so it goes to the parents of every child. Add classes under Setup → Classes & streams.')
+                            ->visible(fn (Get $get): bool => self::audience($get('audience'))?->includesParents() ?? true)
+                            ->columnSpanFull(),
                         RichEditor::make('body')
                             ->label('Message')
                             ->toolbarButtons([
@@ -243,6 +248,11 @@ class CircularResource extends Resource
                     ->success()
                     ->send();
             });
+    }
+
+    protected static function hasClasses(): bool
+    {
+        return SchoolClass::query()->withoutGlobalScopes()->where('school_id', Filament::getTenant()?->getKey())->exists();
     }
 
     public static function audience(mixed $value): ?CircularAudience

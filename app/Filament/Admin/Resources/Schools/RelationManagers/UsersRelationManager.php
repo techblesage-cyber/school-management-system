@@ -2,6 +2,10 @@
 
 namespace App\Filament\Admin\Resources\Schools\RelationManagers;
 
+use App\Filament\School\Pages\Staff;
+use App\Services\Logins;
+use Illuminate\Support\Str;
+use App\Filament\Shared\InitialsAvatars;
 use App\Enums\StaffRole;
 use App\Filament\Components\PassportPhoto;
 use App\Models\User;
@@ -32,6 +36,9 @@ class UsersRelationManager extends RelationManager
 
     protected static ?string $pluralModelLabel = 'staff';
 
+    /** Whether the staff member being added gets an emailed first password */
+    protected bool $makeLogin = false;
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -49,9 +56,10 @@ class UsersRelationManager extends RelationManager
                     ->password()
                     ->revealable()
                     ->minLength(8)
-                    ->required(fn (string $operation): bool => $operation === 'create')
                     ->dehydrated(fn (?string $state): bool => filled($state))
-                    ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'Leave empty to keep the current password.' : null),
+                    ->helperText(fn (string $operation): string => $operation === 'edit'
+                        ? 'Leave empty to keep the current password.'
+                        : 'Leave empty and the system makes a first password and emails it to them.'),
                 self::roleSelect(),
                 PassportPhoto::make('staff-photos'),
             ]);
@@ -63,6 +71,7 @@ class UsersRelationManager extends RelationManager
             ->recordTitleAttribute('name')
             ->columns([
                 ImageColumn::make('photo')
+                    ->defaultImageUrl(fn ($record): string => InitialsAvatars::for((string) $record->name))
                     ->disk('public')
                     ->circular(),
                 TextColumn::make('name')
@@ -82,7 +91,20 @@ class UsersRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->label('New staff member'),
+                    ->label('New staff member')
+                    ->mutateDataUsing(function (array $data): array {
+                        $this->makeLogin = blank($data['password'] ?? null);
+
+                        return $this->makeLogin ? [...$data, 'password' => Str::random(40)] : $data;
+                    })
+                    ->after(function (User $record, array $data): void {
+                        if ($this->makeLogin) {
+                            $role = $data['role'] ?? null;
+                            $role = $role instanceof StaffRole ? $role : StaffRole::tryFrom((string) $role);
+                            $login = Logins::newStaffPassword($record, $this->getOwnerRecord(), $role?->getLabel());
+                            Staff::loginNotice($record, $login, "Login for {$record->name}")->send();
+                        }
+                    }),
                 AttachAction::make()
                     ->label('Add existing user')
                     ->preloadRecordSelect()

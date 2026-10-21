@@ -2,14 +2,17 @@
 
 namespace App\Filament\School\Pages;
 
+use App\Filament\Shared\InitialsAvatars;
 use App\Enums\SchoolAbility;
 use App\Enums\StaffRole;
 use App\Filament\Components\PassportPhoto;
 use App\Models\School;
 use App\Models\TeachingAssignment;
 use App\Models\User;
+use App\Services\Logins;
 use BackedEnum;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DetachAction;
 use Filament\Actions\EditAction;
@@ -33,6 +36,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 /**
@@ -42,6 +46,9 @@ use UnitEnum;
 class Staff extends Page implements HasTable
 {
     use InteractsWithTable;
+
+    /** @var array{password: string|null, emailed: bool}|null The login just made, for the message after adding someone */
+    protected ?array $lastLogin = null;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
@@ -84,6 +91,7 @@ class Staff extends Page implements HasTable
             ]))
             ->columns([
                 ImageColumn::make('photo')
+                    ->defaultImageUrl(fn ($record): string => InitialsAvatars::for((string) $record->name))
                     ->disk('public')
                     ->circular(),
                 TextColumn::make('name')
@@ -105,6 +113,7 @@ class Staff extends Page implements HasTable
             ])
             ->recordActions([
                 $this->editStaffAction(),
+                $this->sendLoginAction(),
                 DetachAction::make()
                     ->label('Remove from school')
                     ->modalDescription('They will no longer be able to sign in to this school\'s portal, and their subjects here are cleared. Their account is kept.')
@@ -125,7 +134,7 @@ class Staff extends Page implements HasTable
         return CreateAction::make()
             ->label('Add staff member')
             ->modalHeading('Add staff member')
-            ->modalDescription('They sign in at this portal\'s address with their email and password.')
+            ->modalDescription('The system makes their first password and emails it to them with the address to sign in. They choose their own password the first time.')
             ->schema([
                 TextInput::make('email')
                     ->label('Email address')
@@ -143,13 +152,6 @@ class Staff extends Page implements HasTable
                     ->required(fn (Get $get): bool => ! $isExisting($get))
                     ->hidden($isExisting)
                     ->maxLength(255),
-                TextInput::make('password')
-                    ->password()
-                    ->revealable()
-                    ->minLength(8)
-                    ->required(fn (Get $get): bool => ! $isExisting($get))
-                    ->hidden($isExisting)
-                    ->helperText('Share it with them privately. They can keep using it.'),
                 PassportPhoto::make('staff-photos')
                     ->hidden($isExisting),
                 self::roleField()
@@ -162,23 +164,71 @@ class Staff extends Page implements HasTable
                 $school = $this->school();
                 $email = self::cleanEmail($data['email']);
 
-                $user = User::where('email', $email)->first()
-                    ?? User::create([
-                        'name' => $data['name'],
-                        'email' => $email,
-                        'password' => $data['password'],
-                        'photo' => $data['photo'] ?? null,
-                    ]);
+                $existing = User::where('email', $email)->first();
+                $user = $existing ?? User::create([
+                    'name' => $data['name'],
+                    'email' => $email,
+                    'password' => Str::random(40),
+                    'photo' => $data['photo'] ?? null,
+                ]);
 
-                $school->users()->attach($user, ['role' => self::roleFrom($data['role'])?->value]);
+                $role = self::roleFrom($data['role']);
+                $school->users()->attach($user, ['role' => $role?->value]);
                 TeachingAssignment::syncFor($school, $user, $data['teaching'] ?? []);
+
+                // Their login, by email
+                $this->lastLogin = $existing
+                    ? ['password' => null, 'emailed' => Logins::addedToSchool($user, $school, $role?->getLabel())]
+                    : Logins::newStaffPassword($user, $school, $role?->getLabel());
 
                 return $user;
             })
-            ->successNotification(fn (User $record): Notification => Notification::make()
-                ->success()
-                ->title("{$record->name} added")
-                ->body('They can now sign in to this school\'s portal.'));
+            ->successNotification(fn (User $record): Notification => self::loginNotice($record, $this->lastLogin, "{$record->name} added"));
+    }
+
+    /**
+     * A new first password, emailed to them, for someone who has forgotten
+     * theirs or never received the first email.
+     */
+    protected function sendLoginAction(): Action
+    {
+        return Action::make('sendLogin')
+            ->label('Send new login')
+            ->icon(Heroicon::OutlinedKey)
+            ->color('gray')
+            ->visible(fn (User $record): bool => $this->managesAccount($record) && ! $record->is(auth()->user()))
+            ->requiresConfirmation()
+            ->modalHeading(fn (User $record): string => "New login for {$record->name}?")
+            ->modalDescription('Makes a new first password and emails it to them. Their old password stops working.')
+            ->action(function (User $record): void {
+                abort_unless($this->managesAccount($record) && ! $record->is(auth()->user()), 403);
+
+                $login = Logins::newStaffPassword($record, $this->school(), isNewPassword: true);
+
+                self::loginNotice($record, $login, "New login for {$record->name}")->send();
+            });
+    }
+
+    /**
+     * Tells whoever added the person how their login was sent, with the
+     * first password in case the email doesn't arrive.
+     *
+     * @param  array{password: string|null, emailed: bool}|null  $login
+     */
+    public static function loginNotice(User $user, ?array $login, string $title): Notification
+    {
+        $notification = Notification::make()->success()->title($title);
+
+        if (! ($login['password'] ?? null)) {
+            return $notification->body(($login['emailed'] ?? false)
+                ? "They keep their usual password. We emailed {$user->email} to let them know."
+                : 'They keep their usual password and can sign in now.');
+        }
+
+        return $notification
+            ->persistent()
+            ->body(($login['emailed'] ? "Their login was emailed to {$user->email}." : 'The email could not be sent.')
+                ." First password: {$login['password']} (in case the email doesn't arrive). They choose their own password when they first sign in.");
     }
 
     protected function editStaffAction(): EditAction
@@ -201,14 +251,6 @@ class Staff extends Page implements HasTable
                     ->maxLength(255)
                     ->unique(table: User::class, ignoreRecord: true)
                     ->visible($this->managesAccount($record)),
-                TextInput::make('password')
-                    ->label('New password')
-                    ->password()
-                    ->revealable()
-                    ->minLength(8)
-                    ->dehydrated(fn (?string $state): bool => filled($state))
-                    ->helperText('Leave empty to keep the current password.')
-                    ->visible($this->managesAccount($record)),
                 PassportPhoto::make('staff-photos')
                     ->visible($this->managesAccount($record)),
                 self::roleField()
@@ -222,7 +264,7 @@ class Staff extends Page implements HasTable
                 $school = $this->school();
 
                 // Account details: only for people who work at this school only
-                $account = Arr::only($data, ['name', 'email', 'password', 'photo']);
+                $account = Arr::only($data, ['name', 'email', 'photo']);
 
                 if ($account !== [] && $this->managesAccount($record)) {
                     $record->update($account);

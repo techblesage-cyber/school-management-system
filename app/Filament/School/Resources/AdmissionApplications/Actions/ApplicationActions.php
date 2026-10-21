@@ -2,6 +2,7 @@
 
 namespace App\Filament\School\Resources\AdmissionApplications\Actions;
 
+use App\Filament\School\Resources\Guardians\Actions\PortalAccessActions;
 use App\Enums\ApplicationStatus;
 use App\Enums\Residence;
 use App\Filament\Components\PassportPhoto;
@@ -107,6 +108,9 @@ class ApplicationActions
                             ->url(StudentResource::getUrl('view', ['record' => $student])),
                     ])
                     ->send();
+
+                // The parent gets their parents' portal login straight away
+                PortalAccessActions::welcome($student->guardians()->withoutGlobalScopes()->wherePivot('is_primary', true)->first());
             });
     }
 

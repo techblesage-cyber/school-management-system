@@ -43,6 +43,14 @@ class AcademicTermResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    /**
+     * Only in the menu for those who set it up; others don't need it there.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canCreate();
+    }
+
     public static function getRecordTitle(?Model $record): ?string
     {
         return $record instanceof AcademicTerm ? $record->name : null;

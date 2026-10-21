@@ -77,36 +77,52 @@ class AttendanceTest extends TestCase
             ->set('selection.class_key', $classKey);
     }
 
+    private function listed(Student $student): string
+    {
+        return 'data-student="'.$student->getKey().'"';
+    }
+
     public function test_a_class_teacher_takes_the_register_for_their_stream(): void
     {
         $amina = $this->student($this->east);
         $brian = $this->student($this->east);
         $cathy = $this->student($this->east);
+        $dan = $this->student($this->east);
         $westPupil = $this->student($this->west);
 
+        // Their own stream is chosen for them
+        Livewire::test(TakeAttendance::class)->assertSet('selection.class_key', 's:'.$this->east->getKey());
+
         $page = $this->page('s:'.$this->east->getKey())
-            ->assertCanSeeTableRecords([$amina, $brian, $cathy])
-            ->assertCanNotSeeTableRecords([$westPupil])
-            ->call('updateTableColumnState', 'attendance', (string) $brian->getKey(), 'absent')
-            ->call('updateTableColumnState', 'note', (string) $brian->getKey(), 'Sick')
-            ->call('updateTableColumnState', 'attendance', (string) $cathy->getKey(), 'late')
+            ->assertSeeHtml($this->listed($amina))
+            ->assertDontSeeHtml($this->listed($westPupil))
+            ->call('mark', $brian->getKey(), 'absent')
+            ->call('mark', $cathy->getKey(), 'late')
+            ->call('mark', $dan->getKey(), 'sick')
+            ->assertSee('Sick 1')
+            ->assertSee('1 not marked yet')
             ->callAction('markRestPresent')
-            ->assertNotified('Marked 1 student present');
+            ->assertNotified('Marked 1 student present')
+            ->assertSee('Register complete');
 
         $this->assertSame(AttendanceStatus::Present, $amina->attendanceRecords()->first()->status);
-        $this->assertSame('Sick', $brian->attendanceRecords()->first()->note);
+        $this->assertSame(AttendanceStatus::Sick, $dan->attendanceRecords()->first()->status);
         $this->assertSame($this->term->getKey(), $brian->attendanceRecords()->first()->academic_term_id);
 
         // Changing a mark updates the same day rather than adding another
-        $page->call('updateTableColumnState', 'attendance', (string) $brian->getKey(), 'excused');
+        $page->call('mark', $brian->getKey(), 'excused');
         $this->assertSame(1, $brian->attendanceRecords()->count());
         $this->assertSame(AttendanceStatus::Excused, $brian->attendanceRecords()->first()->status);
-        $this->assertSame('Sick', $brian->attendanceRecords()->first()->note);
 
-        // The term summary: late counts as at school
+        // Nonsense choices are refused
+        $page->call('mark', $brian->getKey(), 'holiday')->assertForbidden();
+        $this->assertSame(AttendanceStatus::Excused, $brian->attendanceRecords()->first()->status);
+
+        // The term summary: late counts as at school, sick as absent
         $this->assertSame(['present' => 1, 'absent' => 0, 'late' => 0], AttendanceRecord::summaryFor($amina, $this->term));
         $this->assertSame(['present' => 1, 'absent' => 0, 'late' => 1], AttendanceRecord::summaryFor($cathy, $this->term));
         $this->assertSame(['present' => 0, 'absent' => 1, 'late' => 0], AttendanceRecord::summaryFor($brian, $this->term));
+        $this->assertSame(['present' => 0, 'absent' => 1, 'late' => 0], AttendanceRecord::summaryFor($dan, $this->term));
         $this->assertNull(AttendanceRecord::summaryFor($westPupil, $this->term));
     }
 
@@ -116,9 +132,11 @@ class AttendanceTest extends TestCase
 
         // Not their stream: nothing listed, and saving is refused
         $this->page('s:'.$this->west->getKey())
-            ->assertCanNotSeeTableRecords([$westPupil])
-            ->call('updateTableColumnState', 'attendance', (string) $westPupil->getKey(), 'present');
-        $this->page('c:'.$this->s1->getKey())->assertCanNotSeeTableRecords([$westPupil]);
+            ->assertDontSeeHtml($this->listed($westPupil))
+            ->call('mark', $westPupil->getKey(), 'present')
+            ->assertForbidden();
+        $this->page('c:'.$this->s1->getKey())->assertDontSeeHtml($this->listed($westPupil));
+        $this->page('s:'.$this->east->getKey())->call('mark', $westPupil->getKey(), 'present')->assertForbidden();
 
         $this->assertSame(0, AttendanceRecord::count());
 
@@ -129,8 +147,8 @@ class AttendanceTest extends TestCase
         $this->signInAs($subjectTeacher);
 
         $this->page('c:'.$this->s1->getKey())
-            ->assertCanSeeTableRecords([$westPupil])
-            ->call('updateTableColumnState', 'attendance', (string) $westPupil->getKey(), 'present');
+            ->assertSeeHtml($this->listed($westPupil))
+            ->call('mark', $westPupil->getKey(), 'present');
 
         $this->assertSame(1, AttendanceRecord::count());
     }
@@ -140,7 +158,10 @@ class AttendanceTest extends TestCase
         $amina = $this->student($this->east);
 
         $this->page('s:'.$this->east->getKey(), today()->addDay()->toDateString())
-            ->assertCanNotSeeTableRecords([$amina]);
+            ->assertDontSeeHtml($this->listed($amina))
+            ->call('mark', $amina->getKey(), 'present')
+            ->assertForbidden();
+        $this->assertSame(0, AttendanceRecord::count());
 
         $this->actingAs($this->staff(StaffRole::Bursar))->get('/school/stmarys/attendance')->assertForbidden();
         $this->actingAs($this->staff(StaffRole::Secretary))->get('/school/stmarys/attendance')->assertForbidden();

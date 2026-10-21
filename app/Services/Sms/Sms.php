@@ -13,6 +13,7 @@ use App\Models\SmsMessage;
 use App\Models\Student;
 use App\Support\Money;
 use App\Support\PhoneNumber;
+use App\Support\SchoolAddress;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -121,7 +122,7 @@ class Sms
             ->when($classIds->isNotEmpty(), fn ($query) => $query->whereIn('school_class_id', $classIds))
             ->get();
 
-        $message = static::schoolName($school).': '.Str::limit($circular->title, 60).'. '.Str::limit($circular->excerpt(200), 110).' Read it in the parents\' portal: '.url('/parent');
+        $message = static::schoolName($school).': '.Str::limit($circular->title, 60).'. '.Str::limit($circular->excerpt(200), 110).' Read it in the parents\' portal: '.SchoolAddress::parentPortal($school);
 
         return static::toParents($school, $students, fn () => $message, 'circular');
     }
@@ -136,7 +137,7 @@ class Sms
         return static::toParents(
             $school,
             collect($students),
-            fn (Student $student): string => static::schoolName($school).": {$student->first_name}'s report card for {$termName} is ready. See it in the parents' portal: ".url('/parent'),
+            fn (Student $student): string => static::schoolName($school).": {$student->first_name}'s report card for {$termName} is ready. See it in the parents' portal: ".SchoolAddress::parentPortal($school),
             'report_card',
         );
     }
@@ -151,7 +152,7 @@ class Sms
         $sms = static::send(
             $school,
             $account->phone,
-            static::schoolName($school).": Your parents' portal login. Phone: ".PhoneNumber::display($account->phone).", password: {$password}. Sign in at ".url('/parent').' and change your password.',
+            static::schoolName($school).": Your parents' portal login. Phone: ".PhoneNumber::display($account->phone).", password: {$password}. Sign in at ".SchoolAddress::parentPortal($school).' and choose your own password.',
             'portal_login',
         );
 

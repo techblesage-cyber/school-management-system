@@ -3,6 +3,10 @@
 namespace App\Support;
 
 use App\Models\AcademicTerm;
+use App\Models\ParentAccount;
+use App\Models\School;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Storage;
 use App\Models\AttendanceRecord;
 use App\Models\ResultPublication;
 use App\Models\Student;
@@ -16,6 +20,33 @@ use Illuminate\Support\Collection;
  */
 class ParentPortal
 {
+    /**
+     * The school whose portal this is: the signed-in parent's school, or on
+     * a school's own subdomain, that school.
+     */
+    public static function school(): ?School
+    {
+        $parent = Filament::auth()->user();
+
+        if ($parent instanceof ParentAccount) {
+            return $parent->school;
+        }
+
+        return SchoolAddress::fromRequest();
+    }
+
+    public static function brandName(): string
+    {
+        return static::school()?->name ?? 'Parents\' portal';
+    }
+
+    public static function brandLogo(): ?string
+    {
+        $logo = static::school()?->logo;
+
+        return filled($logo) ? Storage::disk('public')->url($logo) : null;
+    }
+
     /** @var array<string, StudentResult|null> */
     private static array $results = [];
 
